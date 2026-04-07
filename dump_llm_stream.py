@@ -43,6 +43,33 @@ def parse_sse(body: str) -> list:
                 pass
     return events
 
+def extract_last_user_text(request_body: dict) -> str:
+    """Extract text content from the last user message in the request."""
+    messages = request_body.get("messages", []) if isinstance(request_body, dict) else []
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            content = msg.get("content", "")
+            if isinstance(content, str):
+                return content
+            if isinstance(content, list):
+                return "\n".join(
+                    block["text"] for block in content
+                    if isinstance(block, dict) and block.get("type") == "text" and "text" in block
+                )
+    return ""
+
+
+def extract_response_text(events: list) -> str:
+    """Extract assistant response text from parsed SSE events."""
+    parts = []
+    for event in events:
+        for choice in event.get("choices", []):
+            content = choice.get("delta", {}).get("content", "")
+            if content:
+                parts.append(content)
+    return "".join(parts)
+
+
 class DumpLLM:
     def request(self, flow: http.HTTPFlow):
         """Capture request body before response begins."""
@@ -104,6 +131,14 @@ class DumpLLM:
         # response.json — SSE parsed into array of events
         with open(f"{dirname}/response.json", "w") as f:
             json.dump(parse_sse(response_body), f, indent=2)
+
+        # request.txt — last user message text
+        with open(f"{dirname}/request.txt", "w") as f:
+            f.write(extract_last_user_text(request_body))
+
+        # response.txt — assistant response text
+        with open(f"{dirname}/response.txt", "w") as f:
+            f.write(extract_response_text(parse_sse(response_body)))
 
         # metadata.json — headers, status, timing
         metadata = {
