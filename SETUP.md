@@ -30,7 +30,7 @@ Skip if `~/.mitmproxy/` already exists.
 ## Step 2 — Install the addon script
 
 ```bash
-cp /home/henry/shared/mitmproxy/dump_llm_stream.py ~/.mitmproxy/dump_llm_stream.py
+cp /home/henry/shared/mitmproxy/dump_llm_stream.py ~/scripts/dump_llm_stream.py
 mkdir -p ~/data/capture
 ```
 
@@ -44,7 +44,7 @@ Description=mitmproxy LLM capture (OpenClaw)
 After=network-online.target
 
 [Service]
-ExecStart=/usr/bin/mitmdump -p 9501 -s /home/henry/.mitmproxy/dump_llm_stream.py
+ExecStart=/usr/bin/mitmdump -p 9501 -s /home/henry/scripts/dump_llm_stream.py
 Restart=always
 RestartSec=5
 Environment=HOME=/home/henry
