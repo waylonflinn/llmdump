@@ -202,8 +202,8 @@ def main():
         print("  ".join(cells))
 
     print()
-    print("Cache Bust Cost Analysis")
-    print(f"total: ${total:.2f}\tfixed: ${total_fixed:.2f}\tdelta: ${total-total_fixed:.2f}")
+    print("Cache Bust Cost Estimate")
+    print(f"current: ${total:.2f}\tfixed: ${total_fixed:.2f}\tdelta: ${total-total_fixed:.2f}")
 
 if __name__ == "__main__":
     main()
