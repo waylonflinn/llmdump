@@ -14,6 +14,8 @@ Each captured request is written to:
 
 The request_body field contains the full prompt including cache_control blocks.
 The response_body field contains the full SSE stream reassembled as a string.
+
+Deploy to ~/scripts/ to update the mitmdump proxy
 """
 
 import json
