@@ -163,7 +163,7 @@ def main():
         rows = rows[-args.n:]
 
     # Column widths
-    headers = ["timestamp",  "agent",   "type",  "prompt",   "output",  "read",  "written", "hit%", "cost ($)"]
+    headers = ["timestamp",  "agent",   "type",  "prompt",   "output",  "read",  "write", "hit%", "cost ($)"]
 
     def row_vals(r):
         return [
