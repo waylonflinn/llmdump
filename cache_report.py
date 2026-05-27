@@ -19,6 +19,57 @@ CAPTURE_DIR = os.path.expanduser("~/data/capture")
 TS_FMT = "%Y%m%dT%H%M%S"
 DT_FMT = "%Y%m%d"
 
+# Anthropic per-million-token rates ($USD), keyed by model alias prefix.
+# Order: input, cache_write_5m, cache_write_1h, cache_read, output.
+ANTHROPIC_RATES_USD_PER_MTOK = {
+    "claude-opus-4-7":   (5.0, 6.25, 10.0, 0.50, 25.0),
+    "claude-opus-4-6":   (5.0, 6.25, 10.0, 0.50, 25.0),
+    "claude-sonnet-4-6": (3.0, 3.75,  6.0, 0.30, 15.0),
+    "claude-sonnet-4-5": (3.0, 3.75,  6.0, 0.30, 15.0),
+    "claude-haiku-4-5":  (1.0, 1.25,  2.0, 0.10,  5.0),
+}
+
+
+def anthropic_rates(model: str):
+    """Longest-prefix match of model name against the rate table."""
+    if not model:
+        return None
+    for prefix in sorted(ANTHROPIC_RATES_USD_PER_MTOK, key=len, reverse=True):
+        if model.startswith(prefix):
+            return ANTHROPIC_RATES_USD_PER_MTOK[prefix]
+    return None
+
+
+def anthropic_cost(merged_usage: dict, model: str) -> float | None:
+    """Compute $USD cost from an Anthropic usage block + model alias.
+
+    Splits cache writes into 5m vs 1h tiers when the breakdown is present;
+    otherwise lumps the total under the 5m rate (the default TTL).
+    """
+    rates = anthropic_rates(model)
+    if rates is None:
+        return None
+    in_rate, w5_rate, w1h_rate, read_rate, out_rate = rates
+    new_in     = merged_usage.get("input_tokens") or 0
+    cache_read = merged_usage.get("cache_read_input_tokens") or 0
+    creation   = merged_usage.get("cache_creation") or {}
+    w5  = creation.get("ephemeral_5m_input_tokens")
+    w1h = creation.get("ephemeral_1h_input_tokens")
+    if w5 is None and w1h is None:
+        w5  = merged_usage.get("cache_creation_input_tokens") or 0
+        w1h = 0
+    else:
+        w5  = w5  or 0
+        w1h = w1h or 0
+    out = merged_usage.get("output_tokens") or 0
+    return (
+        new_in     * in_rate     +
+        cache_read * read_rate   +
+        w5         * w5_rate     +
+        w1h        * w1h_rate    +
+        out        * out_rate
+    ) / 1_000_000
+
 
 def parse_dir_ts(dirname: str) -> datetime | None:
     """Extract and parse timestamp from directory name like 20260407T105438_openrouter_ai."""
@@ -59,16 +110,67 @@ def agent_from_model(model: str) -> str:
 
 
 def extract_usage(response_path: str) -> dict | None:
-    """Parse response.json and return the usage block, or None."""
+    """
+    Parse response.json and return a normalized usage dict, or None.
+
+    Output keys: prompt, cached, written, completion, cost.
+    Handles both OpenAI/OpenRouter and Anthropic native schemas.
+    """
     try:
         with open(response_path) as f:
             events = json.load(f)
-        for event in reversed(events):
-            if "usage" in event:
-                return event["usage"]
     except (json.JSONDecodeError, OSError):
-        pass
-    return None
+        return None
+    if not isinstance(events, list):
+        return None
+
+    # Merge usage from every event that carries one. Walking forward and
+    # only overwriting with non-null values means later events (e.g.
+    # Anthropic's message_delta) override earlier ones (message_start)
+    # while still preserving fields the later event omits.
+    merged = {}
+    model = None
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        # Anthropic message_start nests usage and model under .message
+        msg = event.get("message")
+        if isinstance(msg, dict):
+            if isinstance(msg.get("usage"), dict):
+                merged.update({k: v for k, v in msg["usage"].items() if v is not None})
+            if not model and msg.get("model"):
+                model = msg["model"]
+        # Anthropic message_delta and OpenRouter chunks put usage at the top level
+        if isinstance(event.get("usage"), dict):
+            merged.update({k: v for k, v in event["usage"].items() if v is not None})
+        if not model and event.get("model"):
+            model = event["model"]
+
+    if not merged:
+        return None
+
+    # Anthropic native schema
+    if "input_tokens" in merged or "output_tokens" in merged:
+        new_input = merged.get("input_tokens") or 0
+        cached    = merged.get("cache_read_input_tokens") or 0
+        written   = merged.get("cache_creation_input_tokens") or 0
+        return {
+            "prompt":     new_input + cached + written,
+            "cached":     cached,
+            "written":    written,
+            "completion": merged.get("output_tokens"),
+            "cost":       anthropic_cost(merged, model),
+        }
+
+    # OpenAI / OpenRouter schema
+    details = merged.get("prompt_tokens_details") or {}
+    return {
+        "prompt":     merged.get("prompt_tokens"),
+        "cached":     details.get("cached_tokens"),
+        "written":    details.get("cache_write_tokens"),
+        "completion": merged.get("completion_tokens"),
+        "cost":       merged.get("cost"),
+    }
 
 
 def fmt(val, fmt_str=None, default="—"):
@@ -86,6 +188,7 @@ def main():
     parser.add_argument("-d", "--day",   metavar="YYYYMMDD", help="Include captures after this timestamp and within 24 hrs (overrides -s and -e)")
     parser.add_argument("-n", metavar="N", type=int, help="Show only the most recent N results")
     parser.add_argument("-a", "--agent", metavar="AGENT", help="Filter by agent name (e.g. henry, heinrich)")
+    parser.add_argument("-A", "--all", action="store_true", help="Include captures with no usable usage data (telemetry, count_tokens, etc.)")
     args = parser.parse_args()
 
     if(args.day is not None):
@@ -127,7 +230,16 @@ def main():
                     continue
                 msgs = req.get("messages", [])
                 if msgs:
-                    req_type = "tool" if msgs[-1].get("role") == "tool" else "user"
+                    last = msgs[-1]
+                    last_content = last.get("content")
+                    has_tool_result = isinstance(last_content, list) and any(
+                        isinstance(b, dict) and b.get("type") == "tool_result"
+                        for b in last_content
+                    )
+                    if last.get("role") == "tool" or has_tool_result:
+                        req_type = "tool"
+                    else:
+                        req_type = "user"
                 agent = agent_from_model(req.get("model", ""))
             except (json.JSONDecodeError, OSError):
                 pass
@@ -135,14 +247,16 @@ def main():
         if args.agent and agent != args.agent:
             continue
 
+        if not usage and not args.all:
+            continue
+
         if usage:
-            details = usage.get("prompt_tokens_details", {})
-            prompt   = usage.get("prompt_tokens")
-            cached   = details.get("cached_tokens")
-            written  = details.get("cache_write_tokens")
-            completion = usage.get("completion_tokens")
-            cost     = usage.get("cost")
-            hit_pct  = round(100 * cached / prompt, 1) if (cached is not None and prompt) else None
+            prompt     = usage["prompt"]
+            cached     = usage["cached"]
+            written    = usage["written"]
+            completion = usage["completion"]
+            cost       = usage["cost"]
+            hit_pct    = round(100 * cached / prompt, 1) if (cached is not None and prompt) else None
         else:
             prompt = cached = written = completion = cost = hit_pct = None
 
