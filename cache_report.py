@@ -3,7 +3,7 @@
 cache_report.py — summarize cache usage across mitmproxy captures.
 
 Usage:
-    python3 cache_report.py [--start YYYYMMDDTHHMMSS] [--end YYYYMMDDTHHMMSS]
+    python3 cache_report.py [--start YYYYMMDDTHHMMSS] [--end YYYYMMDDTHHMMSS] [--n N]
 
 Scans all directories in ~/data/capture/, extracts token/cost/cache info
 from response.json, and prints a table sorted by timestamp.
@@ -122,6 +122,9 @@ def main():
             try:
                 with open(request_path) as f:
                     req = json.load(f)
+                if type(req) is not dict:
+                    #print(f"Invalid capture found {request_path}.")
+                    continue
                 msgs = req.get("messages", [])
                 if msgs:
                     req_type = "tool" if msgs[-1].get("role") == "tool" else "user"
