@@ -18,12 +18,36 @@ The response_body field contains the full SSE stream reassembled as a string.
 Deploy to ~/scripts/ to update the mitmdump proxy
 """
 
+import gzip
 import json
 import os
 import time
+import zlib
 from datetime import datetime, timezone
 
 from mitmproxy import http
+
+
+def decode_body(raw: bytes, content_encoding: str) -> bytes:
+    """Decompress a response body based on its Content-Encoding header."""
+    encoding = (content_encoding or "").lower().strip()
+    if encoding in ("", "identity"):
+        return raw
+    if encoding == "gzip":
+        return gzip.decompress(raw)
+    if encoding == "deflate":
+        try:
+            return zlib.decompress(raw)
+        except zlib.error:
+            return zlib.decompress(raw, -zlib.MAX_WBITS)
+    if encoding == "br":
+        import brotli
+        return brotli.decompress(raw)
+    if encoding == "zstd":
+        import zstandard
+        return zstandard.ZstdDecompressor().decompress(raw)
+    print(f"[dump_llm] unknown Content-Encoding {encoding!r}; storing raw bytes")
+    return raw
 
 OUTPUT_DIR = os.path.expanduser("~/data/capture")
 FLAG = os.path.expanduser("~/.mitmproxy/capture.flag")
@@ -139,7 +163,13 @@ class DumpLLM:
             # Capture flag wasn't set at stream start — skip
             return
 
-        response_body = b"".join(flow._llm_chunks).decode("utf-8", errors="replace")
+        raw = b"".join(flow._llm_chunks)
+        try:
+            decoded = decode_body(raw, flow.response.headers.get("Content-Encoding", ""))
+        except Exception as e:
+            print(f"[dump_llm] failed to decompress response: {e}; falling back to raw bytes")
+            decoded = raw
+        response_body = decoded.decode("utf-8", errors="replace")
         host = flow.request.pretty_host
         ts = flow._llm_ts
         ts_iso = datetime.fromtimestamp(ts / 1000).strftime('%Y%m%dT%H%M%S')
