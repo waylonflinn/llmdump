@@ -36,13 +36,31 @@ def is_llm_flow(flow: http.HTTPFlow) -> bool:
     return any(h in flow.request.pretty_host for h in HOSTS)
 
 def parse_sse(body: str) -> list:
+    """
+    Parse Server-Sent Events (SSE) streams into a clean list of JSON objects.
+    Compatible with both OpenAI/OpenRouter and native Anthropic (Claude Code) schemas.
+    """
     events = []
     for line in body.splitlines():
-        if line.startswith("data: ") and line != "data: [DONE]":
+        line = line.strip()
+
+        # Skip empty lines, comments, and event-type lines used by Anthropic
+        if not line or line.startswith(":") or line.startswith("event:"):
+            continue
+
+        if line.startswith("data:"):
+            # Strip out "data: " marker (handles 'data:' and 'data: ')
+            data_content = line[5:].strip()
+
+            # Skip standard termination tokens
+            if data_content in ("[DONE]", ""):
+                continue
+
             try:
-                events.append(json.loads(line[6:]))
+                events.append(json.loads(data_content))
             except json.JSONDecodeError:
                 pass
+
     return events
 
 def extract_last_user_text(request_body: dict) -> str:
@@ -62,13 +80,20 @@ def extract_last_user_text(request_body: dict) -> str:
 
 
 def extract_response_text(events: list) -> str:
-    """Extract assistant response text from parsed SSE events."""
+    """Extract assistant response text from both OpenRouter and Anthropic SSE events."""
     parts = []
     for event in events:
+        # Check for OpenRouter / OpenAI format
         for choice in event.get("choices", []):
             content = choice.get("delta", {}).get("content", "")
             if content:
                 parts.append(content)
+
+        # Check for Native Anthropic format (Claude Code)
+        if event.get("type") == "content_block_delta":
+            delta = event.get("delta", {})
+            if delta.get("type") == "text_delta":
+                parts.append(delta.get("text", ""))
     return "".join(parts)
 
 
