@@ -104,20 +104,110 @@ def extract_last_user_text(request_body: dict) -> str:
 
 
 def extract_response_text(events: list) -> str:
-    """Extract assistant response text from both OpenRouter and Anthropic SSE events."""
+    """
+    Build a tagged transcript of the assistant turn.
+
+    Visible text is emitted inline; extended thinking and tool-use inputs are
+    wrapped in [thinking]...[/thinking] and [tool_use name="..."]...[/tool_use]
+    blocks. Handles both Anthropic native and OpenAI/OpenRouter SSE formats.
+    """
     parts = []
+    anth_block = {}  # Anthropic: index -> (block_type, name)
+    or_mode = None   # OpenRouter: None | "text" | "reasoning"
+    or_tools = {}    # OpenRouter: tool_call index -> name (while open)
+
+    def close_or_reasoning():
+        nonlocal or_mode
+        if or_mode == "reasoning":
+            parts.append("\n[/thinking]\n")
+            or_mode = None
+
+    def close_or_tools():
+        for _ in list(or_tools):
+            parts.append("\n[/tool_use]\n")
+            or_tools.popitem()
+
     for event in events:
-        # Check for OpenRouter / OpenAI format
+        et = event.get("type")
+
+        # --- Anthropic native format ---
+        if et == "content_block_start":
+            idx = event.get("index", 0)
+            cb = event.get("content_block", {}) or {}
+            cb_type = cb.get("type")
+            name = cb.get("name")
+            anth_block[idx] = (cb_type, name)
+            if cb_type == "thinking":
+                parts.append("\n[thinking]\n")
+            elif cb_type == "tool_use":
+                parts.append(f'\n[tool_use name="{name}"]\n')
+            continue
+
+        if et == "content_block_delta":
+            delta = event.get("delta", {}) or {}
+            dt = delta.get("type")
+            if dt == "text_delta":
+                parts.append(delta.get("text", ""))
+            elif dt == "thinking_delta":
+                parts.append(delta.get("thinking", ""))
+            elif dt == "input_json_delta":
+                parts.append(delta.get("partial_json", ""))
+            continue
+
+        if et == "content_block_stop":
+            block = anth_block.pop(event.get("index", 0), None)
+            if block:
+                cb_type, _ = block
+                if cb_type == "thinking":
+                    parts.append("\n[/thinking]\n")
+                elif cb_type == "tool_use":
+                    parts.append("\n[/tool_use]\n")
+            continue
+
+        # --- OpenAI / OpenRouter format ---
         for choice in event.get("choices", []):
-            content = choice.get("delta", {}).get("content", "")
+            delta = choice.get("delta", {}) or {}
+
+            reasoning = delta.get("reasoning") or delta.get("reasoning_content")
+            if reasoning:
+                if or_mode != "reasoning":
+                    close_or_tools()
+                    parts.append("\n[thinking]\n")
+                    or_mode = "reasoning"
+                parts.append(reasoning)
+
+            content = delta.get("content")
             if content:
+                close_or_reasoning()
+                close_or_tools()
+                or_mode = "text"
                 parts.append(content)
 
-        # Check for Native Anthropic format (Claude Code)
-        if event.get("type") == "content_block_delta":
-            delta = event.get("delta", {})
-            if delta.get("type") == "text_delta":
-                parts.append(delta.get("text", ""))
+            for tc in delta.get("tool_calls") or []:
+                tc_idx = tc.get("index", 0)
+                fn = tc.get("function", {}) or {}
+                name = fn.get("name")
+                args = fn.get("arguments", "")
+                if name and tc_idx not in or_tools:
+                    close_or_reasoning()
+                    parts.append(f'\n[tool_use name="{name}"]\n')
+                    or_tools[tc_idx] = name
+                if args:
+                    parts.append(args)
+
+            if choice.get("finish_reason") is not None:
+                close_or_reasoning()
+                close_or_tools()
+
+    # Close anything still open at stream end
+    close_or_reasoning()
+    close_or_tools()
+    for cb_type, _ in anth_block.values():
+        if cb_type == "thinking":
+            parts.append("\n[/thinking]\n")
+        elif cb_type == "tool_use":
+            parts.append("\n[/tool_use]\n")
+
     return "".join(parts)
 
 
