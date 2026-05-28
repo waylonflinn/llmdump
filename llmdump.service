@@ -1,0 +1,11 @@
+[Unit]
+Description=mitmproxy LLM capture
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/mitmdump -p 9501 -s %h/scripts/dump_llm_stream.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

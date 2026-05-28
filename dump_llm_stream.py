@@ -1,5 +1,5 @@
 """
-dump_llm.py — mitmproxy addon to capture LLM API requests/responses as JSON files.
+dump_llm_stream.py — mitmproxy addon to capture streaming LLM API requests/responses as JSON and text files.
 Supports streaming (SSE) responses — chunks pass through immediately, no latency added.
 
 Usage:
@@ -15,7 +15,7 @@ Each captured request is written to:
 The request_body field contains the full prompt including cache_control blocks.
 The response_body field contains the full SSE stream reassembled as a string.
 
-Deploy to ~/scripts/ to update the mitmdump proxy
+Deploy to ~/scripts/ (or the location configured in your service) to update the mitmdump proxy
 """
 
 import gzip
@@ -26,6 +26,14 @@ import zlib
 from datetime import datetime, timezone
 
 from mitmproxy import http
+
+# Read from Zsh environment variables, with a fallback to the original default paths
+OUTPUT_DIR = os.environ.get("LLMDUMP_CAPTURE_DIR", os.path.expanduser("~/data/capture"))
+FLAG = os.environ.get("LLMDUMP_FLAG_FILE", os.path.expanduser("~/.mitmproxy/capture.flag"))
+
+HOSTS = {"openrouter.ai", "api.anthropic.com"}
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
 def decode_body(raw: bytes, content_encoding: str) -> bytes:
@@ -48,13 +56,6 @@ def decode_body(raw: bytes, content_encoding: str) -> bytes:
         return zstandard.ZstdDecompressor().decompress(raw)
     print(f"[dump_llm] unknown Content-Encoding {encoding!r}; storing raw bytes")
     return raw
-
-OUTPUT_DIR = os.path.expanduser("~/data/capture")
-FLAG = os.path.expanduser("~/.mitmproxy/capture.flag")
-HOSTS = {"openrouter.ai", "api.anthropic.com"}
-
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-
 
 def is_llm_flow(flow: http.HTTPFlow) -> bool:
     return any(h in flow.request.pretty_host for h in HOSTS)
