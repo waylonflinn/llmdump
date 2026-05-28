@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- 1. Unique identifier for the service -->
+    <key>Label</key>
+    <string>com.user.llmdump</string>
+
+    <!-- 2. Execution logic via a shell wrapper to dynamically expand $HOME -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/zsh</string>
+        <string>-c</string>
+        <string>exec /usr/bin/mitmdump -p 9501 -s "$HOME/scripts/dump_llm_stream.py"</string>
+    </array>
+
+    <!-- 3. KeepAlive translates to systemd's Restart=always -->
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <!-- 4. Throttling interval before restarting (similar to RestartSec=5) -->
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
+</dict>
+</plist>
