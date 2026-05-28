@@ -19,16 +19,16 @@ proxy_help() {
     echo ""
     echo "🛠️  \e[1mAvailable Commands:\e[0m"
     echo "   • \e[1;32mproxy_on\e[0m"
-    echo "     Enables proxy routing in this tab AND enables system level logging."
+    echo "     Enables proxy routing in this session AND enables system level logging."
     echo ""
     echo "   • \e[1;93mproxy_off_local\e[0m"
-    echo "     Disables proxy routing in this tab only. Leaves system level logging on."
+    echo "     Disables proxy routing in this session only. Leaves system level logging on."
     echo ""
     echo "   • \e[1;93mproxy_off\e[0m"
     echo "     Alias for \e[1;93mproxy_off_local\e[0m"
     echo ""
     echo "   • \e[1;93mproxy_on_system\e[0m"
-    echo "     Enables system level logging but disables proxy routing in this tab."
+    echo "     Enables system level logging but disables proxy routing in this session."
     echo ""
     echo "   • \e[1;31mproxy_off_system\e[0m"
     echo "     Completely disables proxy routing here and system-wide."
@@ -63,11 +63,11 @@ proxy_status() {
             echo "   • Traffic routes to: $HTTPS_PROXY"
             echo "   • Captures are in: $PROXY_CAPTURE_DIR"
             echo "   • Dump script capture flag: $PROXY_FLAG_FILE"
-            echo "   • Type \e[93mproxy_off\e[0m to disable only in this tab or \e[31mproxy_off_system\e[0m to disable system-wide."
+            echo "   • Type \e[93mproxy_off\e[0m to disable only in this session or \e[31mproxy_off_system\e[0m to disable system-wide."
         fi
     # 2. Local Off State: Shell bypassed but background capturing remains active
     elif [ $has_flag -eq 1 ] && [ $has_proxy -eq 0 ]; then
-        echo "🌐 Proxy & 💾 Capture: \e[93mNOT ACTIVE IN THIS TAB\e[0m"
+        echo "🌐 Proxy & 💾 Capture: \e[93mNOT ACTIVE IN THIS SESSION\e[0m"
         if [ "$mode" = "full" ]; then
             echo "   • mitmdump flag is present, but HTTPS_PROXY is not set."
             echo "   • Type \e[32mproxy_on\e[0m to enable here or \e[31mproxy_off_system\e[0m to disable system-wide."
@@ -112,7 +112,7 @@ proxy_on() {
     proxy_status "full"
 }
 
-# 🟡 Turn off proxy routing in this tab only (Leaves disk capture flag alone)
+# 🟡 Turn off proxy routing in this session only (Leaves disk capture flag alone)
 proxy_off_local() {
     # Unset Intercept
     unset HTTPS_PROXY #HTTP_PROXY https_proxy http_proxy

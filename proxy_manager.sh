@@ -22,11 +22,11 @@ proxy_status() {
         if [ "$mode" = "full" ]; then
             echo -e "   • Traffic routes to: $HTTPS_PROXY"
             echo -e "   • Captures are in: $PROXY_CAPTURE_DIR"
-            echo -e "   • Type \e[93mproxy_off\e[0m to disable only in this tab or \e[31mproxy_off_system\e[0m to disable system-wide."
+            echo -e "   • Type \e[93mproxy_off\e[0m to disable only in this session or \e[31mproxy_off_system\e[0m to disable system-wide."
         fi
     # 2. Local Off State: Shell bypassed but background capturing remains active
     elif [ $has_flag -eq 1 ] && [ $has_proxy -eq 0 ]; then
-        echo -e "🌐 Proxy & 💾 Capture: \e[93mNOT ACTIVE IN THIS TAB\e[0m"
+        echo -e "🌐 Proxy & 💾 Capture: \e[93mNOT ACTIVE IN THIS SESSION\e[0m"
         if [ "$mode" = "full" ]; then
             echo -e "   • mitmdump flag is present, but HTTPS_PROXY is not set."
             echo -e "   • Type \e[32mproxy_on\e[0m to enable here or \e[31mproxy_off_system\e[0m to disable system-wide."
@@ -65,7 +65,7 @@ proxy_on() {
     proxy_status "full"
 }
 
-# 🟡 Turn off proxy routing in this tab only (Leaves disk capture flag alone)
+# 🟡 Turn off proxy routing in this session only (Leaves disk capture flag alone)
 proxy_off() {
     # Unset Intercept
     unset HTTPS_PROXY
@@ -116,13 +116,13 @@ proxy_help() {
     echo ""
     echo -e "🛠️  \e[1mAvailable Commands:\e[0m"
     echo -e "   • \e[1;32mproxy_on\e[0m"
-    echo -e "     Enables proxy routing in this tab AND sets the global system flag."
+    echo -e "     Enables proxy routing in this session AND sets the global system flag."
     echo ""
     echo -e "   • \e[1;93mproxy_off\e[0m"
-    echo -e "     Bypasses proxy routing in this tab only. Leaves background logging on."
+    echo -e "     Bypasses proxy routing in this session only. Leaves background logging on."
     echo ""
     echo -e "   • \e[1;93mproxy_on_system\e[0m"
-    echo -e "     Sets the global logging flag but bypasses intercept routing in this tab."
+    echo -e "     Sets the global logging flag but bypasses intercept routing in this session."
     echo ""
     echo -e "   • \e[1;31mproxy_off_system\e[0m"
     echo -e "     Completely disables proxy routing here and wipes the system-wide logging flag."
