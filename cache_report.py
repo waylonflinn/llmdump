@@ -109,6 +109,30 @@ def agent_from_model(model: str) -> str:
     base = model.split("/")[-1].split(":")[0]
     return base[:10]
 
+# TODO: make this more robust by adding an argument for provider
+def normalize_model(model: str) -> str:
+
+    # direct anthropic api: model names start with "claude-"
+    if(model.startswith("claude-")):
+        model_name = model[7:-4]
+        model_version = model[-3:]
+        model_version = model_version.replace("-", ".")
+        return f"{model_name} {model_version}"
+
+    # openrouter: model names start with the provider
+    if(model.startswith("anthropic/claude-")):
+        model_name = model[17:-4]
+        model_version = model[-3:]
+        model_version = model_version.replace("-", ".")
+        return f"{model_name} {model_version}"
+
+    if(model.startswith("z-ai/")):
+        model_name = model[5:-4]
+        model_version = model[-3:]
+        model_version = model_version.replace("-", ".")
+        return f"{model_name} {model_version}"
+
+    return model
 
 def extract_usage(response_path: str) -> dict | None:
     """
@@ -264,6 +288,7 @@ def main():
         rows.append({
             "ts":         ts.strftime(TS_FMT),
             "agent":      agent,
+            "model":      normalize_model(req.get("model", "")),
             "type":       req_type,
             "prompt":     prompt,
             "cached":     cached,
@@ -281,12 +306,12 @@ def main():
         rows = rows[-args.n:]
 
     # Column widths
-    headers = ["timestamp",  "agent",   "type",  "prompt",   "output",  "read",  "write", "hit%", "cost ($)"]
+    headers = ["timestamp",  "model",   "type",  "prompt",   "output",  "read",  "write", "hit%", "cost ($)"]
 
     def row_vals(r):
         return [
             r["ts"],
-            r["agent"],
+            r["model"],
             r["type"],
             fmt(r["prompt"],     "{:,}"),
             fmt(r["completion"], "{:,}"),
@@ -313,7 +338,7 @@ def main():
         total_fixed += cost if r["cached"] != 0 else cost * 0.1
 
         vals = row_vals(r)
-        # Left-align timestamp, agent, type; right-align numeric columns
+        # Left-align timestamp, model, type; right-align numeric columns
         cells = [vals[0].ljust(col_widths[0]), vals[1].ljust(col_widths[1]), vals[2].ljust(col_widths[2])]
         for v, w in zip(vals[3:], col_widths[3:]):
             cells.append(v.rjust(w))
