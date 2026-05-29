@@ -50,7 +50,7 @@ python cache_report.py
 
 (make sure to review the install.sh file first, or have your agent take a look)
 
-## 🚀 Manual Install
+## 🔍 Manual Install
 
 ### 1. Install mitmproxy and Register Certificate
 Instructions below are for Ubuntu. Similar steps apply on most linux distributions.
