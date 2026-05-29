@@ -63,22 +63,23 @@ fi
 echo ""
 echo "📂 Choose a directory to save captures:"
 
-options=(
-    "$HOME/.cache/llmdump/capture (Default)"
-    "$HOME/.local/share/llmdump/capture"
-    "$HOME/data/capture"
-    "Custom (User Specified)"
-)
+# Print the options manually
+echo "   1) $HOME/.cache/llmdump/capture (Default)"
+echo "   2) $HOME/.local/share/llmdump/capture"
+echo "   3) $HOME/data/capture"
+echo "   4) Custom (User Specified)"
+echo ""
 
-# Set the prompt for the select menu
-PS3="Enter choice [1-4]: "
+while true; do
+    # Force the read command to pull directly from the keyboard terminal device
+    read -r -p "Enter choice [1-4] (Default: 1): " CHOICE </dev/tty
 
-# Force the select loop to read from the terminal device instead of stdin
-exec 3<&0               # Save current stdin
-exec 0</dev/tty         # Redirect stdin to the terminal
+    # If the user just hits Enter, treat it as option 1
+    if [ -z "$CHOICE" ]; then
+        CHOICE="1"
+    fi
 
-select opt in "${options[@]}"; do
-    case $REPLY in
+    case $CHOICE in
         1)
             CAPTURE_DIR="$HOME/.cache/llmdump/capture"
             break
@@ -93,7 +94,8 @@ select opt in "${options[@]}"; do
             ;;
         4)
             echo ""
-            read -r -p "Enter custom absolute path: " custom_path
+            # Force this custom read to use the terminal device as well
+            read -r -p "Enter custom absolute path: " custom_path </dev/tty
             # Replace leading ~ with $HOME if present
             CAPTURE_DIR="${custom_path/#\~/$HOME}"
             if [ -z "$CAPTURE_DIR" ]; then
@@ -102,20 +104,12 @@ select opt in "${options[@]}"; do
             fi
             break
             ;;
-        "")
-            CAPTURE_DIR="$HOME/.cache/llmdump/capture"
-            break
-            ;;
         *) 
-            # If user enters an empty line or invalid option, fallback safely to option 1
-            echo "❌ Invalid. Falling back to default."
-            CAPTURE_DIR="$HOME/.cache/llmdump/capture"
-            break
+            echo "❌ Invalid choice. Please select 1, 2, 3, or 4."
+            echo ""
             ;;
     esac
 done
-
-exec 0<&3               # Restore original stdin
 
 echo "✅ Capture directory       $CAPTURE_DIR"
 mkdir -p "$CAPTURE_DIR"
