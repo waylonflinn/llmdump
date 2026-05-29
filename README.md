@@ -44,7 +44,13 @@ python cache_report.py
 
 ---
 
-## 🚀 Setup & Installation
+##  🚀 Easy Install
+
+`curl -fsSL https://raw.githubusercontent.com/waylonflinn/llmdump/master/install.sh | bash`
+
+(make sure to review the install.sh file first, or have your agent take a look)
+
+## 🚀 Manual Install
 
 ### 1. Install mitmproxy and Register Certificate
 Instructions below are for Ubuntu. Similar steps apply on most linux distributions.
