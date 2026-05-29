@@ -26,33 +26,44 @@ The shell environment scripts provide the following commands for managing the ca
 | Command | Action |
 | :--- | :--- |
 | `llmdump help` | Print a help message that describes these commands and the configured variables |
-| `llmdump on` | Enables systemd service, creates capture.flag file, and sets session variables |
-| `llmdump off` | Disables systemd service, removes capture.flag file, and unsets session variables |
+| `llmdump on` | Enables system service, creates `capture.flag` file and sets session variables |
+| `llmdump off` | Disables system service, removes `capture.flag` file and unsets session variables |
 | `llmdump session off` | Disables session variables only. Leaves system level as-is |
-| `llmdump system on` | Enables systemd service and flag. Leaves session variables as-is |
-| `llmdump status` | Displays status for systemd, flag file and current session variables |
-| `llmdump report` | Generate a summary from existing captures |
+| `llmdump system on` | Enables system service and flag. Leaves session variables as-is |
+| `llmdump status` | Displays status for service, flag file and current session variables |
+| `llmdump report` | Generate a summary from existing captures (defaults to current day) |
 
 ---
 
 ## 📊 Analytics and Cost Tracking
 
-`llmdump report` is a helper for the `cache_report.py` script.
+`llmdump report` is a helper command that invokes the `cache_report.py` script.
 
-It shows token counts, caching stats, and cost breakdowns against your data dump directory. Direct usage (after install) looks like this:
+It shows token counts, caching stats, and cost breakdowns against your data dump directory. After install, you can call it directly like this:
 
 ```bash
 # print the help message for cache_report.py
 python ~/.local/share/llmdump/cache_report.py -h
 ```
 
+You can also access the same functionality via `llmdump report` by adding any arguments `cache_report.py` accepts. By default `llmdump report` just passes `-d <current_day>`.
+
 ---
 
 ##  🚀 Easy Install
 
+NOTE: requires `mitmdump` (install before)
+
 `curl -fsSL https://raw.githubusercontent.com/waylonflinn/llmdump/master/install.sh | bash`
 
-(make sure to review the `install.sh` file first, or have your agent take a look)
+### What it Does
+
+* create `.local/share/llmdump`
+* download the files in this repo
+* create a systemd service (systemd or launchd)
+* add a single line to the 'rc' for your running shell to source the shell integration  (`.zshrc`, `.bashrc`)
+
+(make sure to review the `install.sh` before running, or have your agent take a look)
 
 ## 🔍 Manual Install
 
@@ -75,7 +86,7 @@ sudo update-ca-certificates
 
 ### 2. Install Shell Environment Script
 
-Most clients require some environment variables to be set for the https proxy method used here to work (e.g. `HTTPS_PROXY`).
+Most clients require some environment variables to be set for the https proxy method used here to work (e.g. `HTTPS_PROXY`, `NODE_EXTRA_CA_CERTS`).
 Scripts are included for zsh and bash that manage the entire process of starting and stopping capture: `llmdump.zsh` (zsh) and `llmdum.sh` (bash).
 They also manage the environment variables (described below) used to set where things are saved and control when to capture. They aren't mandatory but they do make setup and usage much easier.
 
