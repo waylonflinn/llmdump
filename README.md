@@ -54,7 +54,9 @@ You can also access the same functionality via `llmdump report` by adding any ar
 
 NOTE: requires `mitmdump` (install before)
 
-`curl -fsSL https://raw.githubusercontent.com/waylonflinn/llmdump/master/install.sh | bash`
+```sh
+curl -fsSL https://raw.githubusercontent.com/waylonflinn/llmdump/master/install.sh | bash
+```
 
 ### What it Does
 
@@ -87,7 +89,9 @@ sudo update-ca-certificates
 
 This directory used by the install script and referenced throughout these instructions (and in the system service file)
 
-`mkdir -p ~/.local/share/llmdump`
+```bash
+mkdir -p ~/.local/share/llmdump
+```
 
 If you use another one, make the changes as necessary.
 
@@ -172,11 +176,15 @@ Environment=NODE_EXTRA_CA_CERTS=%h/.mitmproxy/mitmproxy-ca-cert.pem
 
 Then enable the llmdump service (this causes it to start on boot):
 
-`systemctl --user enable llmdump.service`
+```sh
+systemctl --user enable llmdump.service
+```
 
 If OpenClaw is running as a user service, you probably already have linger enabled. If not, run the following:
 
-`sudo loginctl enable-linger $USER`
+```sh
+sudo loginctl enable-linger $USER
+```
 
 ---
 
