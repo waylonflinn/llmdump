@@ -73,6 +73,10 @@ options=(
 # Set the prompt for the select menu
 PS3="Enter choice [1-4]: "
 
+# Force the select loop to read from the terminal device instead of stdin
+exec 3<&0               # Save current stdin
+exec 0</dev/tty         # Redirect stdin to the terminal
+
 select opt in "${options[@]}"; do
     case $REPLY in
         1)
@@ -110,6 +114,8 @@ select opt in "${options[@]}"; do
             ;;
     esac
 done
+
+exec 0<&3               # Restore original stdin
 
 echo "✅ Capture directory       $CAPTURE_DIR"
 mkdir -p "$CAPTURE_DIR"
