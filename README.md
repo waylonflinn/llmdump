@@ -59,8 +59,8 @@ NOTE: requires `mitmdump` (install before)
 ### What it Does
 
 * create `.local/share/llmdump`
-* download the files in this repo
-* create a systemd service (systemd or launchd)
+* download necessary files from this repo
+* create a system service (systemd or launchd)
 * add a single line to the 'rc' for your running shell to source the shell integration  (`.zshrc`, `.bashrc`)
 
 (make sure to review the `install.sh` before running, or have your agent take a look)
