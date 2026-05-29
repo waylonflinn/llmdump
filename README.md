@@ -50,7 +50,7 @@ You can also access the same functionality via `llmdump report` by adding any ar
 
 ---
 
-##  🚀 Easy Install
+## 🚀 Easy Install
 
 NOTE: requires `mitmproxy` (install before running)
 
@@ -68,6 +68,15 @@ curl -fsSL https://raw.githubusercontent.com/waylonflinn/llmdump/master/install.
 * add a single line to the 'rc' for your running shell to source the shell integration  (`.zshrc`, `.bashrc`)
 
 (make sure to review the `install.sh` before running, or have your agent take a look)
+
+### 🗑️ Uninstall
+
+```bash
+rm -rf ~/.cache/llmdump # or wherever you chose for your capture dir
+rm -rf ~/.local/share/llmdump
+rm ~/.config/systemd/user/llmdump.service
+```
+Then remove the 'source ~/.local/share/llmdump/llmdump.sh' line from your shell rc file.
 
 ## 🔍 Manual Install
 
