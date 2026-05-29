@@ -1,9 +1,9 @@
-# To enable, copy into your home directory and add a line to .bashrc:
+# To enable, copy into your home directory and add a line to .bashrc or .zshrc:
 #
 # mkdir -p $HOME/.local/share/llmdump
 # cp llmdump.sh $HOME/.local/share/llmdump
 #
-# (add to .bashrc)
+# (add to .bashrc or .zshrc)
 # source "$HOME/.local/share/llmdump/llmdump.sh"
 #
 # ==============================================================================
@@ -16,22 +16,22 @@ export LLMDUMP_FLAG_FILE="$HOME/.mitmproxy/capture.flag"
 # 🎯 Main Multiplexer Function
 llmdump() {
     case "$1" in
-        on)
+        on|enable)
             _llmdump_system_on
             _llmdump_session_on
             _llmdump_status "full"
             ;;
-        off)
+        off|disable)
             _llmdump_system_off
             _llmdump_session_off
             _llmdump_status "compact"
             ;;
         session)
-            if [ "$2" = "on"  ]; then
+            if [ "$2" = "on"  ] || [ "$2" = "enable" ]; then
                 _llmdump_system_on
                 _llmdump_session_on
                 _llmdump_status "full"
-            elif [ "$2" = "off" ]; then
+            elif [ "$2" = "off" ] || [ "$2" = "disable" ]; then
                 _llmdump_session_off
                 _llmdump_status "full"
             else
@@ -39,10 +39,10 @@ llmdump() {
             fi
             ;;
         system)
-            if [ "$2" = "on" ]; then
+            if [ "$2" = "on"  ] || [ "$2" = "enable" ]; then
                 _llmdump_system_on
                 _llmdump_status "full"
-            elif [ "$2" = "off" ]; then
+            elif [ "$2" = "off" ] || [ "$2" = "disable" ]; then
                 _llmdump_system_off
                 _llmdump_session_off
                 _llmdump_status "compact"
@@ -126,9 +126,12 @@ _llmdump_status() {
     local has_flag=0
     local has_proxy=0
     local service_active=0
+    # Detect OS: 'darwin' covers macOS, 'linux-gnu' covers Linux
+    #local is_mac=0
 
     [ -f "$LLMDUMP_FLAG_FILE" ] && has_flag=1
     [ -n "$HTTPS_PROXY" ] && has_proxy=1
+    #[[ "$OSTYPE" == darwin* ]] && is_mac=1
 
     if [[ "$OSTYPE" == darwin* ]]; then
         # On macOS, check if the service label is running

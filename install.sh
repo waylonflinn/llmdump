@@ -20,7 +20,7 @@ fi
 if [[ "$SHELL" == *"zsh"* ]]; then
     echo "🐚 Detected Shell: Zsh"
     SHELL_RC="$HOME/.zshrc"
-    SHELL_SCRIPT_NAME="llmdump.zsh"
+    SHELL_SCRIPT_NAME="llmdump.sh"
 elif [[ "$SHELL" == *"bash"* ]]; then
     echo "🐚 Detected Shell: Bash"
     SHELL_RC="$HOME/.bashrc"
@@ -72,16 +72,19 @@ if [ "$IS_MAC" = true ]; then
     curl -sSL "$REPO_URL/com.user.llmdump.plist" -o "$PLIST_FILE"
     
     # Dynamically fix paths inside the plist to point to the user's home directory
-    sed -i '' "s|/Users/USER/|$HOME/|g" "$PLIST_FILE" 2>/dev/null || sed -i "s|/Users/USER/|$HOME/|g" "$PLIST_FILE"
-    sed -i '' "s|/home/USER/|$HOME/|g" "$PLIST_FILE" 2>/dev/null || sed -i "s|/home/USER/|$HOME/|g" "$PLIST_FILE"
+    # sed -i '' "s|/Users/USER/|$HOME/|g" "$PLIST_FILE" 2>/dev/null || sed -i "s|/Users/USER/|$HOME/|g" "$PLIST_FILE"
+    # sed -i '' "s|/home/USER/|$HOME/|g" "$PLIST_FILE" 2>/dev/null || sed -i "s|/home/USER/|$HOME/|g" "$PLIST_FILE"
 else
     echo "📥 Downloading Ubuntu Systemd Service..."
     SERVICE_FILE="$SERVICE_DIR/llmdump.service"
     curl -sSL "$REPO_URL/llmdump.service" -o "$SERVICE_FILE"
     
     # Dynamically fix paths inside the systemd service to point to the user's home directory
-    sed -i "s|/home/USER/|$HOME/|g" "$SERVICE_FILE"
-    sed -i "s|/Users/USER/|$HOME/|g" "$SERVICE_FILE"
+    # sed -i "s|/home/USER/|$HOME/|g" "$SERVICE_FILE"
+    # sed -i "s|/Users/USER/|$HOME/|g" "$SERVICE_FILE"
+    # Might need to do something similar to the above for setting
+    # * the location of mitmdump
+    # * the value of LLMDUMP_CAPTURE_DIR
     
     # Reload the user systemd daemon
     systemctl --user daemon-reload

@@ -11,7 +11,7 @@
     <array>
         <string>/bin/zsh</string>
         <string>-c</string>
-        <string>exec /usr/bin/mitmdump -p 9501 -s "$HOME/scripts/dump_llm_stream.py"</string>
+        <string>exec /opt/homebrew/bin/mitmdump -p 9501 -s "$HOME/.local/share/llmdump/dump_llm_stream.py"</string>
     </array>
 
     <!-- 3. KeepAlive translates to systemd's Restart=always -->
