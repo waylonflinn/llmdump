@@ -76,7 +76,7 @@ rm -rf ~/.cache/llmdump # or wherever you chose for your capture dir
 rm -rf ~/.local/share/llmdump
 rm ~/.config/systemd/user/llmdump.service
 ```
-Then remove the 'source ~/.local/share/llmdump/llmdump.sh' line from your shell rc file.
+Then remove the `source ~/.local/share/llmdump/llmdump.sh` line from your shell rc file.
 
 ## 🔍 Manual Install
 
