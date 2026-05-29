@@ -146,7 +146,7 @@ _llmdump_status() {
         echo -e "🌐 LLM Dump Status: \e[32mFULLY ENABLED\e[0m (System & Session)"
     elif [ $service_active -eq 1 ] && [ $has_proxy -eq 0 ]; then
         echo -e "🌐 LLM Dump Status: \e[93mSYSTEM ONLY\e[0m (not proxied in this shell session)"
-    elif [ $service_active -eq 0 ] && [ $has_flag -eq 0 ] && [ $has_proxy -eq 0 ] || ; then
+    elif [ $service_active -eq 0 ] && [ $has_flag -eq 0 ] && [ $has_proxy -eq 0 ]; then
         echo -e "🌐 LLM Dump Status: \e[31mDISABLED\e[0m"
     else
         echo -e "🌐 LLM Dump Status: \e[31mDISABLED / PARTIAL\e[0m"
