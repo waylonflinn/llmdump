@@ -85,7 +85,7 @@ sudo update-ca-certificates
 
 ### 2. Create Directory and Download Files
 
-This is directory used by the install script and referenced throughout these instructions (and in the system service file)
+This directory used by the install script and referenced throughout these instructions (and in the system service file)
 
 `mkdir -p ~/.local/share/llmdump`
 
@@ -100,7 +100,7 @@ Download:
 ### 2. Install Shell Environment Script
 
 Most clients require some environment variables to be set for the https proxy method used here to work (e.g. `HTTPS_PROXY`, `NODE_EXTRA_CA_CERTS`).
-A shell script is included that manages the entire process of starting and stopping capture: `llmdum.sh`.
+A shell script is included that manages the entire process of starting and stopping capture: `llmdump.sh`.
 It also manages the environment variables (described below) used to set where things are saved and control when to capture. It isn't mandatory but does make setup and usage much easier.
 
 #### For Zsh (`~/.zshrc`)
