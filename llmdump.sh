@@ -10,7 +10,7 @@
 # 📂 GLOBAL CONFIGURATION: Shared Paths (used internally, in the systemd service, and available in the user environment)
 # ==============================================================================
 export LLMDUMP_CAPTURE_DIR="$HOME/data/capture/"
-export LLMDUMP_FLAG_FILE="$HOME/.mitmproxy/capture.flag"
+export LLMDUMP_FLAG_FILE="$HOME/.local/share/llmdump/capture.flag"
 
 
 # 🎯 Main Multiplexer Function
