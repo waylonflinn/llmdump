@@ -31,15 +31,18 @@ The shell environment scripts provide the following commands for managing the ca
 | `llmdump session off` | Disables session variables only. Leaves system level as-is |
 | `llmdump system on` | Enables systemd service and flag. Leaves session variables as-is |
 | `llmdump status` | Displays status for systemd, flag file and current session variables |
+| `llmdump report` | Generate a summary from existing captures |
 
 ---
 
 ## 📊 Analytics and Cost Tracking
 
-To see token counts, caching stats, and cost breakdowns, execute the built-in analyzer engine against your data dump directory:
+`llmdump report` is a helper for the `cache_report.py` script.
+
+It shows token counts, caching stats, and cost breakdowns against your data dump directory. Direct usage (after install) looks like this:
 
 ```bash
-python cache_report.py
+python ~/.local/share/llmdump/cache_report.py -h
 ```
 
 ---
