@@ -42,6 +42,7 @@ The shell environment scripts provide the following commands for managing the ca
 It shows token counts, caching stats, and cost breakdowns against your data dump directory. Direct usage (after install) looks like this:
 
 ```bash
+# print the help message for cache_report.py
 python ~/.local/share/llmdump/cache_report.py -h
 ```
 
