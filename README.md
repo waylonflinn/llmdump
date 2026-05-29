@@ -48,7 +48,7 @@ python cache_report.py
 
 `curl -fsSL https://raw.githubusercontent.com/waylonflinn/llmdump/master/install.sh | bash`
 
-(make sure to review the install.sh file first, or have your agent take a look)
+(make sure to review the `install.sh` file first, or have your agent take a look)
 
 ## 🔍 Manual Install
 
