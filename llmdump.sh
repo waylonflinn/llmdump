@@ -177,18 +177,18 @@ _llmdump_system_on() {
     touch "$LLMDUMP_FLAG_FILE"
 
     if [[ "$OSTYPE" == darwin* ]]; then
-        # Export the variables from the current shell context into launchd's global environment
-        launchctl setenv LLMDUMP_FLAG_FILE "$LLMDUMP_FLAG_FILE"
-        launchctl setenv LLMDUMP_CAPTURE_DIR "$LLMDUMP_CAPTURE_DIR"
+        # The plist's wrapper sources this file at launch, so LLMDUMP_CAPTURE_DIR /
+        # LLMDUMP_FLAG_FILE are inherited from here on every (re)start — no setenv needed.
 
         # Modern launchctl bootstrap registers the service but does NOT start it automatically on boot
         launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.user.llmdump.plist" 2>/dev/null
-        # Kickstart instantly boots it up for this session only (-k forces a restart if already running)
-        launchctl kickstart "gui/$(id -u)/com.user.llmdump"
+        # -k forces a restart if already running, so edits to this file are picked up immediately
+        launchctl kickstart -k "gui/$(id -u)/com.user.llmdump"
     else
-        # Push variables to the systemd user session BEFORE starting the service
-        systemctl --user import-environment LLMDUMP_FLAG_FILE LLMDUMP_CAPTURE_DIR
-        systemctl --user start llmdump.service
+        # The unit's wrapper sources this file at launch, so env vars are
+        # inherited from here on every (re)start -- no import-environment needed.
+        # restart (vs start) ensures edits to this file are picked up immediately.
+        systemctl --user restart llmdump.service
     fi
 }
 

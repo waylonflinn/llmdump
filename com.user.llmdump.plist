@@ -6,15 +6,13 @@
     <key>Label</key>
     <string>com.user.llmdump</string>
 
-    <!-- 2. Execution logic via a shell wrapper to dynamically expand $HOME -->
+    <!-- 2. Shell wrapper sources llmdump.sh so the service inherits the current
+         LLMDUMP_CAPTURE_DIR / LLMDUMP_FLAG_FILE values on every (re)launch -->
     <key>ProgramArguments</key>
     <array>
-        <string>/opt/homebrew/bin/mitmdump</string>
-        <string>-p</string>
-        <string>9501</string>
-        <string>-s</string>
-        <!-- Edit the user dir, if installing manually (the installer script will update automatically)  -->
-        <string>/Users/USER/.local/share/llmdump/dump_llm_stream.py</string>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>source "$HOME/.local/share/llmdump/llmdump.sh" &amp;&amp; exec /opt/homebrew/bin/mitmdump -p 9501 -s "$HOME/.local/share/llmdump/dump_llm_stream.py"</string>
     </array>
     <!-- 3. KeepAlive translates to systemd's Restart=always -->
     <key>KeepAlive</key>

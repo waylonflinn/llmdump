@@ -151,9 +151,8 @@ if [ "$IS_MAC" = true ]; then
     PLIST_FILE="$SERVICE_DIR/com.user.llmdump.plist"
     curl -sSL "$REPO_URL/com.user.llmdump.plist" -o "$PLIST_FILE"
     
-    # Update actual mitmdump path and home directory paths inside the plist
+    # Update actual mitmdump path inside the plist ($HOME is expanded by the wrapper at launch time)
     sed -i '' "s|/opt/homebrew/bin/mitmdump|$MITMDUMP_PATH|g" "$PLIST_FILE"
-    sed -i '' "s|/Users/USER/|$HOME/|g" "$PLIST_FILE"
 elif [ "$HAS_SYSTEMD" = true ]; then
     #echo "▼ Downloading Systemd Service..."
     SERVICE_FILE="$SERVICE_DIR/llmdump.service"

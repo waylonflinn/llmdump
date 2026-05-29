@@ -3,7 +3,10 @@ Description=mitmproxy LLM capture
 After=network-online.target
 
 [Service]
-ExecStart=/usr/bin/mitmdump -p 9501 -s %h/.local/share/llmdump/dump_llm_stream.py
+# Shell wrapper sources llmdump.sh so the service inherits the current
+# LLMDUMP_CAPTURE_DIR / LLMDUMP_FLAG_FILE values on every (re)start --
+# important when linger is enabled and the unit auto-starts at boot.
+ExecStart=/bin/bash -c 'source %h/.local/share/llmdump/llmdump.sh && exec /usr/bin/mitmdump -p 9501 -s %h/.local/share/llmdump/dump_llm_stream.py'
 Restart=always
 RestartSec=5
 
