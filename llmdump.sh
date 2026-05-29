@@ -1,8 +1,10 @@
 # To enable, copy into your home directory and add a line to .bashrc:
 #
-# mkdir -p $HOME/.config/bash
-# cp llmdump.sh $HOME/.config/bash/
-# source "$HOME/.config/bash/llmdump.sh"
+# mkdir -p $HOME/.local/share/llmdump
+# cp llmdump.sh $HOME/.local/share/llmdump
+#
+# (add to .bashrc)
+# source "$HOME/.local/share/llmdump/llmdump.sh"
 #
 # ==============================================================================
 # 📂 GLOBAL CONFIGURATION: Shared Paths (used internally, in the systemd service, and available in the user environment)
@@ -51,6 +53,13 @@ llmdump() {
         status)
             _llmdump_status "full"
             ;;
+        report)
+            if [ "$2" = "help"  ]; then
+                _llmdump_report "-h"
+            else
+                _llmdump_report "${@:2}"
+            fi
+            ;;
         help|-h|--help)
             _llmdump_help
             ;;
@@ -90,7 +99,25 @@ _llmdump_help() {
     echo -e ""
     echo -e "   • \e[1;36mllmdump status\e[0m"
     echo -e "     Displays current session and systemd status."
+    echo -e ""
+    echo -e "   • \e[1;36mllmdump report\e[0m"
+    echo -e "     display a report summarizing any capture activity for today."
+    echo -e "     try \e[1;36mllmdump report help\e[0m for additional options."
     echo -e "\e[1;34m======================================================================\e[0m"
+}
+
+_llmdump_report() {
+    # Check if the user provided arguments after the word 'report'
+    if [ -z "$1" ]; then
+        # This standard format works identically on both Ubuntu (GNU) and macOS (BSD)
+        TODAY=$(date +%Y%m%d)
+
+        echo "📊 Generating report for today ($TODAY)..."
+        python3 "$HOME/.local/share/llmdump/cache_report.py" -d "$TODAY"
+    else
+        # Arguments provided: pass them all through
+        python3 "$HOME/.local/share/llmdump/cache_report.py" "$@"
+    fi
 }
 
 # 🔍 Internal Status Checker
@@ -147,8 +174,10 @@ _llmdump_system_on() {
     touch "$LLMDUMP_FLAG_FILE"
 
     if [[ "$OSTYPE" == darwin* ]]; then
-        launchctl load "$HOME/Library/LaunchAgents/com.user.llmdump.plist" 2>/dev/null
-        launchctl start com.user.llmdump
+        # Modern launchctl bootstrap registers the service but does NOT start it automatically on boot
+        launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.user.llmdump.plist" 2>/dev/null
+        # Kickstart instantly boots it up for this session only (-k forces a restart if already running)
+        launchctl kickstart "gui/$(id -u)/com.user.llmdump"
     else
         # Push variables to the systemd user session BEFORE starting the service
         systemctl --user import-environment LLMDUMP_FLAG_FILE LLMDUMP_CAPTURE_DIR
@@ -161,8 +190,10 @@ _llmdump_system_off() {
     rm -f "$LLMDUMP_FLAG_FILE"
 
     if [[ "$OSTYPE" == darwin* ]]; then
-        launchctl stop com.user.llmdump 2>/dev/null
-        launchctl unload "$HOME/Library/LaunchAgents/com.user.llmdump.plist" 2>/dev/null
+        # Safely kills the running process instantly
+        launchctl kill SIGTERM "gui/$(id -u)/com.user.llmdump" 2>/dev/null
+        # Unregisters the agent entirely
+        launchctl bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.user.llmdump.plist" 2>/dev/null
     else
         systemctl --user stop llmdump.service
     fi
