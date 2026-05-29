@@ -1,4 +1,4 @@
-# llmdump 🔍🤖
+# 🔍🤖 llmdump
 
 Dump LLM requests and responses to a timestamped labeled directory as text and JSON
 
