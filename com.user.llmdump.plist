@@ -9,11 +9,13 @@
     <!-- 2. Execution logic via a shell wrapper to dynamically expand $HOME -->
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/zsh</string>
-        <string>-c</string>
-        <string>exec /opt/homebrew/bin/mitmdump -p 9501 -s "$HOME/.local/share/llmdump/dump_llm_stream.py"</string>
+        <string>/opt/homebrew/bin/mitmdump</string>
+        <string>-p</string>
+        <string>9501</string>
+        <string>-s</string>
+        <!-- Edit the user dir, if installing manually (the installer script will update automatically)  -->
+        <string>/Users/USER/.local/share/llmdump/dump_llm_stream.py</string>
     </array>
-
     <!-- 3. KeepAlive translates to systemd's Restart=always -->
     <key>KeepAlive</key>
     <dict>

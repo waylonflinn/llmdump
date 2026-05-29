@@ -8,6 +8,17 @@ OS_TYPE=$(uname -s)
 if [ "$OS_TYPE" = "Linux" ]; then
     echo "💻 Detected System: Ubuntu/Linux"
     IS_MAC=false
+
+    # Check if systemd is the active init system
+    if [ "$(ps -p 1 -o comm=)" = "systemd" ]; then
+        echo "⚙️  Detected Init: systemd"
+        HAS_SYSTEMD=true
+    else
+        echo "⚠️  Warning: systemd was not detected as the active init system on this Linux machine."
+        echo "   The background service will not be installed automatically."
+        HAS_SYSTEMD=false
+    fi
+
 elif [ "$OS_TYPE" = "Darwin" ]; then
     echo "🍏 Detected System: macOS"
     IS_MAC=true
@@ -31,14 +42,70 @@ else
     SHELL_RC="$HOME/.bashrc"
     SHELL_SCRIPT_NAME="llmdump.sh"
 fi
+# 2b. Select Data Capture Directory
+echo ""
+echo "📁 Choose a data capture directory:"
+options=(
+    "$HOME/.cache/llmdump/capture (Default)"
+    "$HOME/.local/share/llmdump/capture"
+    "$HOME/data/capture"
+    "Custom (User Specified)"
+)
+
+# Set the prompt for the select menu
+PS3="Enter choice [1-4]: "
+
+select opt in "${options[@]}"
+do
+    case $REPLY in
+        1)
+            CAPTURE_DIR="$HOME/.cache/llmdump/capture"
+            break
+            ;;
+        2)
+            CAPTURE_DIR="$HOME/.local/share/llmdump/capture"
+            break
+            ;;
+        3)
+            CAPTURE_DIR="$HOME/data/capture"
+            break
+            ;;
+        4)
+            echo ""
+            read -r -p "Enter custom absolute path: " custom_path
+            # Replace leading ~ with $HOME if present
+            CAPTURE_DIR="${custom_path/#\~/$HOME}"
+            if [ -z "$CAPTURE_DIR" ]; then
+                echo "❌ Invalid path. Falling back to default."
+                CAPTURE_DIR="$HOME/.cache/llmdump/capture"
+            fi
+            break
+            ;;
+        *) 
+            # If user enters an empty line or invalid option, fallback safely to option 1
+            echo "📝 Defaulting to choice 1."
+            CAPTURE_DIR="$HOME/.cache/llmdump/capture"
+            break
+            ;;
+    esac
+done
+
+echo "✅ Selected capture directory: $CAPTURE_DIR"
+mkdir -p "$CAPTURE_DIR"
+echo ""
 
 # 3. Check Prerequisites
-if ! command -v mitmdump &> /dev/null; then
+# Detect absolute location of mitmdump
+MITMDUMP_PATH=$(command -v mitmdump || true)
+
+if [ -n "$MITMDUMP_PATH" ]; then
+    echo "🔍 Detected mitmdump executable path: $MITMDUMP_PATH"
+else
     echo "⚠️ Warning: 'mitmdump' (mitmproxy) was not found."
     if [ "$IS_MAC" = true ]; then
         echo "💡 Install it using: brew install mitmproxy"
     else
-        echo "💡 Install it using: sudo apt install mitmproxy"
+        echo "💡 Install it with your system package manager (e.g. 'sudo apt install mitmproxy', 'sudo pacman -S mitmproxy')"
     fi
 fi
 
@@ -71,31 +138,40 @@ if [ "$IS_MAC" = true ]; then
     PLIST_FILE="$SERVICE_DIR/com.user.llmdump.plist"
     curl -sSL "$REPO_URL/com.user.llmdump.plist" -o "$PLIST_FILE"
     
-    # Dynamically fix paths inside the plist to point to the user's home directory
-    # sed -i '' "s|/Users/USER/|$HOME/|g" "$PLIST_FILE" 2>/dev/null || sed -i "s|/Users/USER/|$HOME/|g" "$PLIST_FILE"
-    # sed -i '' "s|/home/USER/|$HOME/|g" "$PLIST_FILE" 2>/dev/null || sed -i "s|/home/USER/|$HOME/|g" "$PLIST_FILE"
-else
-    echo "📥 Downloading Ubuntu Systemd Service..."
+    # Update actual mitmdump path and home directory paths inside the plist
+    sed -i '' "s|/opt/homebrew/bin/mitmdump|$MITMDUMP_PATH|g" "$PLIST_FILE"
+    sed -i '' "s|/Users/USER/|$HOME/|g" "$PLIST_FILE"
+elif [ "$HAS_SYSTEMD" = true]; then
+    echo "📥 Downloading Systemd Service..."
     SERVICE_FILE="$SERVICE_DIR/llmdump.service"
     curl -sSL "$REPO_URL/llmdump.service" -o "$SERVICE_FILE"
     
-    # Dynamically fix paths inside the systemd service to point to the user's home directory
-    # sed -i "s|/home/USER/|$HOME/|g" "$SERVICE_FILE"
-    # sed -i "s|/Users/USER/|$HOME/|g" "$SERVICE_FILE"
-    # Might need to do something similar to the above for setting
-    # * the location of mitmdump
-    # * the value of LLMDUMP_CAPTURE_DIR
+    # Update actual mitmdump path inside the systemd service
+    sed -i "s|/usr/bin/mitmdump|$MITMDUMP_PATH|g" "$SERVICE_FILE"
+    #sed -i "s|/home/USER/|$HOME/|g" "$SERVICE_FILE" 2>/dev/null || sed -i "s|/Users/USER/|$HOME/|g" "$SERVICE_FILE" 2>/dev/null
     
     # Reload the user systemd daemon
     systemctl --user daemon-reload
     echo "💡 If using this service with OpenClaw you should run 'systemctl --user enable llmdump'"
     echo "   then edit $SERVICE_DIR/openclaw-gateway.service to include the necessary environment variables."
-    echo "   see https://github.com/waylonflinn/llmdump#3-openclaw-setup-optional"
+    echo "   see https://github.com"
+else
+    echo "⚠️  Warning: service not installed."
+    echo "    Please run 'mitmdump -p 9501 -s ~/.local/share/llmdump/dump_llm_stream.py' manually"
+    echo "    or install an equivalent system service. (service detection in 'llmdump status' will not function)"
 fi
+
 
 # 7. Setup Shell Integration Based on Detected Shell
 echo "📥 Downloading shell integration script..."
 curl -sSL "$REPO_URL/$SHELL_SCRIPT_NAME" -o "$SHARE_DIR/$SHELL_SCRIPT_NAME"
+
+# Modify the capture path directly inside the downloaded script
+if [ "$IS_MAC" = true ]; then
+    sed -i '' "s|^export LLMDUMP_CAPTURE_DIR=.*|export LLMDUMP_CAPTURE_DIR=\"$CAPTURE_DIR\"|g" "$SHARE_DIR/$SHELL_SCRIPT_NAME"
+else
+    sed -i "s|^export LLMDUMP_CAPTURE_DIR=.*|export LLMDUMP_CAPTURE_DIR=\"$CAPTURE_DIR\"|g" "$SHARE_DIR/$SHELL_SCRIPT_NAME"
+fi
 
 SOURCE_LINE="source $SHARE_DIR/$SHELL_SCRIPT_NAME"
 if [ -f "$SHELL_RC" ]; then
@@ -110,7 +186,7 @@ else
     echo "   $SOURCE_LINE"
 fi
 
-echo "💡 To change the capture directory edit the variable LLMDUMP_CAPTURE_DIR at the top of $SHARE_DIR/$SHELL_SCRIPT_NAME"
+echo "💡 To change the capture directory later, edit the variable LLMDUMP_CAPTURE_DIR at the top of $SHARE_DIR/$SHELL_SCRIPT_NAME"
 echo "💡 You may also want to add 'llmdump status' to $SHELL_RC to print a status reminder on login"
 
 echo "🎉 Installation complete!"

@@ -9,7 +9,7 @@
 # ==============================================================================
 # 📂 GLOBAL CONFIGURATION: Shared Paths (used internally, in the systemd service, and available in the user environment)
 # ==============================================================================
-export LLMDUMP_CAPTURE_DIR="$HOME/data/capture/"
+export LLMDUMP_CAPTURE_DIR="$HOME/.cache/llmdump/capture/"
 export LLMDUMP_FLAG_FILE="$HOME/.local/share/llmdump/capture.flag"
 
 
@@ -177,6 +177,10 @@ _llmdump_system_on() {
     touch "$LLMDUMP_FLAG_FILE"
 
     if [[ "$OSTYPE" == darwin* ]]; then
+        # Export the variables from the current shell context into launchd's global environment
+        launchctl setenv LLMDUMP_FLAG_FILE "$LLMDUMP_FLAG_FILE"
+        launchctl setenv LLMDUMP_CAPTURE_DIR "$LLMDUMP_CAPTURE_DIR"
+
         # Modern launchctl bootstrap registers the service but does NOT start it automatically on boot
         launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.user.llmdump.plist" 2>/dev/null
         # Kickstart instantly boots it up for this session only (-k forces a restart if already running)

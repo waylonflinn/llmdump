@@ -28,7 +28,7 @@ from datetime import datetime, timezone
 from mitmproxy import http
 
 # Read from Zsh environment variables, with a fallback to the original default paths
-OUTPUT_DIR = os.environ.get("LLMDUMP_CAPTURE_DIR", os.path.expanduser("~/data/capture"))
+OUTPUT_DIR = os.environ.get("LLMDUMP_CAPTURE_DIR", os.path.expanduser("~/.cache/llmdump/capture/"))
 FLAG = os.environ.get("LLMDUMP_FLAG_FILE", os.path.expanduser("~/.local/share/llmdump/capture.flag"))
 
 HOSTS = {"openrouter.ai", "api.anthropic.com"}

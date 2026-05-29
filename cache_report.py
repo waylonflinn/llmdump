@@ -15,7 +15,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-CAPTURE_DIR = os.environ.get("LLMDUMP_CAPTURE_DIR", os.path.expanduser("~/data/capture"))
+CAPTURE_DIR = os.environ.get("LLMDUMP_CAPTURE_DIR", os.path.expanduser("~/.cache/llmdump/capture/"))
 TS_FMT = "%Y%m%dT%H%M%S"
 DT_FMT = "%Y%m%d"
 

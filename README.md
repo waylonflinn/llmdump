@@ -52,7 +52,7 @@ You can also access the same functionality via `llmdump report` by adding any ar
 
 ##  🚀 Easy Install
 
-NOTE: requires `mitmdump` (install before)
+NOTE: requires `mitmproxy` (install before running)
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/waylonflinn/llmdump/master/install.sh | bash
@@ -63,6 +63,8 @@ curl -fsSL https://raw.githubusercontent.com/waylonflinn/llmdump/master/install.
 * create `~/.local/share/llmdump`
 * download necessary files from this repo
 * create a system service (systemd or launchd)
+* create capture dir (default `~/.cache/llmdump/capture`)
+* update the system service and shell integration files with correct paths
 * add a single line to the 'rc' for your running shell to source the shell integration  (`.zshrc`, `.bashrc`)
 
 (make sure to review the `install.sh` before running, or have your agent take a look)
