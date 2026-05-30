@@ -149,14 +149,14 @@ mkdir -p "$SERVICE_DIR"
 if [ "$IS_MAC" = true ]; then
     #echo "▼ Downloading macOS Launch Agent..."
     PLIST_FILE="$SERVICE_DIR/com.user.llmdump.plist"
-    curl -sSL "$REPO_URL/com.user.llmdump.plist" -o "$PLIST_FILE"
+    curl -sSL "$REPO_URL/service/com.user.llmdump.plist" -o "$PLIST_FILE"
     
     # Update actual mitmdump path inside the plist ($HOME is expanded by the wrapper at launch time)
     sed -i '' "s|/opt/homebrew/bin/mitmdump|$MITMDUMP_PATH|g" "$PLIST_FILE"
 elif [ "$HAS_SYSTEMD" = true ]; then
     #echo "▼ Downloading Systemd Service..."
     SERVICE_FILE="$SERVICE_DIR/llmdump.service"
-    curl -sSL "$REPO_URL/llmdump.service" -o "$SERVICE_FILE"
+    curl -sSL "$REPO_URL/service/llmdump.service" -o "$SERVICE_FILE"
     
     # Update actual mitmdump path inside the systemd service
     sed -i "s|/usr/bin/mitmdump|$MITMDUMP_PATH|g" "$SERVICE_FILE"

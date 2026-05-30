@@ -109,7 +109,7 @@ If you use another one, make the changes as necessary.
 Download:
 * `llmdump.sh`
 * `llmdump.env`
-* `llmdump.service`
+* `service/llmdump.service`
 * `dump_llm_stream.py`
 * `cache_report.py`
 
@@ -149,10 +149,10 @@ Paths must be absolute -- systemd does not expand `$HOME` in `EnvironmentFile` v
 If you don't want to use the shell script you'll still want to keep `llmdump.env` so the service picks up the right paths. You'll also have to manually set `HTTPS_PROXY` (and probably `NODE_EXTRA_CA_CERTS`) in your shell.
 
 ### 3. Setup and Launch the Service
-This repository includes an example systemd service file (`llmdump.service`) and launchd plist (`com.user.llmdump.plist`).
+This repository includes an example systemd service file (`service/llmdump.service`) and launchd plist (`service/com.user.llmdump.plist`).
 
 
-Here's the example systemd (copied from `llmdump.service`).
+Here's the example systemd (copied from `service/llmdump.service`).
 ```ini
 [Unit]
 Description=mitmproxy LLM capture
