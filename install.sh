@@ -126,7 +126,7 @@ mkdir -p "$SHARE_DIR"
 REPO_URL="https://raw.githubusercontent.com/waylonflinn/llmdump/master/"
 
 #echo "▼ Downloading scripts to $SHARE_DIR..."
-curl -sSL "$REPO_URL/dump_llm_stream.py" -o "$SHARE_DIR/dump_llm_stream.py"
+curl -sSL "$REPO_URL/service/dump_llm_stream.py" -o "$SHARE_DIR/dump_llm_stream.py"
 curl -sSL "$REPO_URL/cache_report.py" -o "$SHARE_DIR/cache_report.py"
 
 # Make the python files executable just in case

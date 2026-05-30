@@ -110,7 +110,7 @@ Download:
 * `llmdump.sh`
 * `llmdump.env`
 * `service/llmdump.service`
-* `dump_llm_stream.py`
+* `service/dump_llm_stream.py`
 * `cache_report.py`
 
 ### 2. Install Shell Environment Script
@@ -176,7 +176,7 @@ Instructions below are for Ubuntu.
 
 NOTE: The service reads `LLMDUMP_CAPTURE_DIR` and `LLMDUMP_FLAG_FILE` directly from `llmdump.env` via `EnvironmentFile=`, so it's safe to `enable` if you want it running at boot (and necessary for OpenClaw -- see below).
 
-Make sure to examine `dump_llm_stream.py` before loading it as a service. You can also have your agent check it for security.
+Make sure to examine `service/dump_llm_stream.py` before loading it as a service. You can also have your agent check it for security.
 
 ### 3. OpenClaw setup (optional)
 This is an optional step for running captures for OpenClaw. If you just want to use this with other coding agents or tools, you can skip this.
