@@ -170,7 +170,7 @@ WantedBy=default.target
 
 Instructions below are for Ubuntu.
 
-1. Copy the service file into `~/.config/systemd/user/`.
+1. Move the service file into `~/.config/systemd/user/`.
 2. Modify the location of `dump_llm_stream.py`, if necessary.
 3. `systemctl --user daemon-reload`
 
