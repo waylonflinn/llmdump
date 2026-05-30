@@ -6,13 +6,14 @@
     <key>Label</key>
     <string>com.user.llmdump</string>
 
-    <!-- 2. Shell wrapper sources llmdump.sh so the service inherits the current
-         LLMDUMP_CAPTURE_DIR / LLMDUMP_FLAG_FILE values on every (re)launch -->
+    <!-- 2. Shell wrapper sources llmdump.env (set -a auto-exports the assignments)
+         so mitmdump inherits the current LLMDUMP_CAPTURE_DIR / LLMDUMP_FLAG_FILE
+         values on every (re)launch -->
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>source "$HOME/.local/share/llmdump/llmdump.sh" &amp;&amp; exec /opt/homebrew/bin/mitmdump -p 9501 -s "$HOME/.local/share/llmdump/dump_llm_stream.py"</string>
+        <string>set -a &amp;&amp; source "$HOME/.local/share/llmdump/llmdump.env" &amp;&amp; set +a &amp;&amp; exec /opt/homebrew/bin/mitmdump -p 9501 -s "$HOME/.local/share/llmdump/dump_llm_stream.py"</string>
     </array>
     <!-- 3. KeepAlive translates to systemd's Restart=always -->
     <key>KeepAlive</key>

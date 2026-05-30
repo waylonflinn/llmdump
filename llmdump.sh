@@ -7,10 +7,15 @@
 # source "$HOME/.local/share/llmdump/llmdump.sh"
 #
 # ==============================================================================
-# 📂 GLOBAL CONFIGURATION: Shared Paths (used internally, in the systemd service, and available in the user environment)
+# 📂 GLOBAL CONFIGURATION: Shared paths sourced from llmdump.env (the same file
+# is loaded directly by the systemd unit's EnvironmentFile= and by the launchd
+# plist wrapper, so all three consumers see the same values).
 # ==============================================================================
-export LLMDUMP_CAPTURE_DIR="$HOME/.cache/llmdump/capture/"
-export LLMDUMP_FLAG_FILE="$HOME/.local/share/llmdump/capture.flag"
+if [ -f "$HOME/.local/share/llmdump/llmdump.env" ]; then
+    set -a
+    . "$HOME/.local/share/llmdump/llmdump.env"
+    set +a
+fi
 
 
 # 🎯 Main Multiplexer Function

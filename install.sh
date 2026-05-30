@@ -175,11 +175,17 @@ fi
 #echo "▼ Downloading shell integration script..."
 curl -sSL "$REPO_URL/$SHELL_SCRIPT_NAME" -o "$SHARE_DIR/$SHELL_SCRIPT_NAME"
 
-# Modify the capture path directly inside the downloaded script
+# Download the shared env file (consumed by llmdump.sh, the launchd plist
+# wrapper, and the systemd unit's EnvironmentFile=) and bake in the chosen
+# absolute paths -- systemd does not expand $HOME in EnvironmentFile values.
+curl -sSL "$REPO_URL/llmdump.env" -o "$SHARE_DIR/llmdump.env"
+
 if [ "$IS_MAC" = true ]; then
-    sed -i '' "s|^export LLMDUMP_CAPTURE_DIR=.*|export LLMDUMP_CAPTURE_DIR=\"$CAPTURE_DIR\"|g" "$SHARE_DIR/$SHELL_SCRIPT_NAME"
+    sed -i '' "s|^LLMDUMP_CAPTURE_DIR=.*|LLMDUMP_CAPTURE_DIR=\"$CAPTURE_DIR\"|g" "$SHARE_DIR/llmdump.env"
+    sed -i '' "s|/Users/USER/|$HOME/|g" "$SHARE_DIR/llmdump.env"
 else
-    sed -i "s|^export LLMDUMP_CAPTURE_DIR=.*|export LLMDUMP_CAPTURE_DIR=\"$CAPTURE_DIR\"|g" "$SHARE_DIR/$SHELL_SCRIPT_NAME"
+    sed -i "s|^LLMDUMP_CAPTURE_DIR=.*|LLMDUMP_CAPTURE_DIR=\"$CAPTURE_DIR\"|g" "$SHARE_DIR/llmdump.env"
+    sed -i "s|/Users/USER/|$HOME/|g" "$SHARE_DIR/llmdump.env"
 fi
 
 SOURCE_LINE="source $SHARE_DIR/$SHELL_SCRIPT_NAME"
@@ -200,5 +206,5 @@ echo "🗘  Please restart your terminal or run: source $SHELL_RC"
 echo ""
 
 echo "💡   To enable OpenClaw see:              https://github.com/waylonflinn/llmdump#3-openclaw-setup-optional"
-echo "💡   To change the capture directory:     Set LLMDUMP_CAPTURE_DIR in $SHARE_DIR/$SHELL_SCRIPT_NAME"
+echo "💡   To change the capture directory:     Set LLMDUMP_CAPTURE_DIR in $SHARE_DIR/llmdump.env"
 echo "💡   To print a status reminder on login: Add 'llmdump status' to $SHELL_RC "

@@ -3,10 +3,11 @@ Description=mitmproxy LLM capture
 After=network-online.target
 
 [Service]
-# Shell wrapper sources llmdump.sh so the service inherits the current
-# LLMDUMP_CAPTURE_DIR / LLMDUMP_FLAG_FILE values on every (re)start --
-# important when linger is enabled and the unit auto-starts at boot.
-ExecStart=/bin/bash -c 'source %h/.local/share/llmdump/llmdump.sh && exec /usr/bin/mitmdump -p 9501 -s %h/.local/share/llmdump/dump_llm_stream.py'
+# llmdump.env is the shared config (also sourced by llmdump.sh and the launchd
+# plist wrapper). systemd reads it directly so vars are set in the service's
+# environment regardless of linger / boot-time auto-start.
+EnvironmentFile=%h/.local/share/llmdump/llmdump.env
+ExecStart=/usr/bin/mitmdump -p 9501 -s %h/.local/share/llmdump/dump_llm_stream.py
 Restart=always
 RestartSec=5
 

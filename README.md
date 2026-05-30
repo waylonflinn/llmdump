@@ -108,6 +108,7 @@ If you use another one, make the changes as necessary.
 
 Download:
 * `llmdump.sh`
+* `llmdump.env`
 * `llmdump.service`
 * `dump_llm_stream.py`
 * `cache_report.py`
@@ -132,19 +133,20 @@ if [ -f "$HOME/.local/share/llmdump/llmdump.sh" ]; then
 fi
 ```
 
-Modify the variables at the top of the script, if desired.
+Modify the paths in `llmdump.env`, if desired. The same file is sourced by `llmdump.sh` and loaded directly by the systemd unit (via `EnvironmentFile=`), so all consumers stay in sync.
 
 
 ```sh
-export LLMDUMP_CAPTURE_DIR="$HOME/data/capture/"
-export LLMDUMP_FLAG_FILE="$HOME/.local/share/llmdump/capture.flag"
+LLMDUMP_CAPTURE_DIR="/home/user/data/capture/"
+LLMDUMP_FLAG_FILE="/home/user/.local/share/llmdump/capture.flag"
 ```
 
 - `LLMDUMP_CAPTURE_DIR` determines where captures will be saved (you probably want to change this one).
 - `LLMDUMP_FLAG_FILE` determines where the flag file is located (default location is probably fine). captures only happen when this file is present. file is managed by the shell environment script commands
 
+Paths must be absolute -- systemd does not expand `$HOME` in `EnvironmentFile` values.
 
-If you don't want to use the scripts you can also just set `LLMDUMP_CAPTURE_DIR` in your systemd service definition with an `Environment` line. You'll also have to manually set `HTTPS_PROXY` (and probably `NODE_EXTRA_CA_CERTS`) in your shell.
+If you don't want to use the shell script you'll still want to keep `llmdump.env` so the service picks up the right paths. You'll also have to manually set `HTTPS_PROXY` (and probably `NODE_EXTRA_CA_CERTS`) in your shell.
 
 ### 3. Setup and Launch the Service
 This repository includes an example systemd service file (`llmdump.service`) and launchd plist (`com.user.llmdump.plist`).
@@ -157,6 +159,7 @@ Description=mitmproxy LLM capture
 After=network-online.target
 
 [Service]
+EnvironmentFile=%h/.local/share/llmdump/llmdump.env
 ExecStart=/usr/bin/mitmdump -p 9501 -s %h/.local/share/llmdump/dump_llm_stream.py
 Restart=always
 RestartSec=5
@@ -171,7 +174,7 @@ Instructions below are for Ubuntu.
 2. Modify the location of `dump_llm_stream.py`, if necessary.
 3. `systemctl --user daemon-reload`
 
-NOTE: Don't start or enable the service (unless using with OpenClaw, see below). The scripts inject necessary environment varables (via `import-environment`) before starting the service. If you're not using the scripts and you're managing environment variables yourself (like `LLMDUMP_CAPTURE_DIR`), you can go ahead and start it.
+NOTE: The service reads `LLMDUMP_CAPTURE_DIR` and `LLMDUMP_FLAG_FILE` directly from `llmdump.env` via `EnvironmentFile=`, so it's safe to `enable` if you want it running at boot (and necessary for OpenClaw -- see below).
 
 Make sure to examine `dump_llm_stream.py` before loading it as a service. You can also have your agent check it for security.
 
