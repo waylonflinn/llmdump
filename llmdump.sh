@@ -115,7 +115,7 @@ _llmdump_report() {
         # This standard format works identically on both Ubuntu (GNU) and macOS (BSD)
         TODAY=$(date +%Y%m%d)
 
-        echo "📊 Generating report for today ($TODAY)..."
+        echo "generating report for today ($TODAY)..."
         python3 "$HOME/.local/share/llmdump/cache_report.py" -d "$TODAY"
     else
         # Arguments provided: pass them all through
