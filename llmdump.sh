@@ -55,6 +55,15 @@ llmdump() {
                 _llmdump_help
             fi
             ;;
+        gui)
+            if [ "$2" = "on"  ] || [ "$2" = "enable" ] || [ "$2" = "start" ]; then
+                _llmdump_gui_on
+            elif [ "$2" = "off" ] || [ "$2" = "disable" ] || [ "$2" = "stop" ]; then
+                _llmdump_gui_off
+            else
+                _llmdump_help
+            fi
+            ;;
         status)
             _llmdump_status "full"
             ;;
@@ -101,6 +110,13 @@ _llmdump_help() {
     echo -e "   • \e[1;31mllmdump system off\e[0m"
     echo -e "     Alias for \e[1;31mllmdump off\e[0m"
     echo -e ""
+    echo -e "   • \e[1;32mllmdump gui on\e[0m (experimental)"
+    echo -e "     Sets capture variables in the logged-in GUI session so graphical"
+    echo -e "     apps launched afterward are captured. Restart apps to pick it up."
+    echo -e ""
+    echo -e "   • \e[1;31mllmdump gui off\e[0m (experimental)"
+    echo -e "     Clears the GUI session capture variables."
+    echo -e ""
     echo -e "   • \e[1;36mllmdump status\e[0m"
     echo -e "     Displays current session and systemd status."
     echo -e ""
@@ -129,6 +145,7 @@ _llmdump_status() {
     local has_flag=0
     local has_proxy=0
     local service_active=0
+    local has_gui=0
     # Detect OS: 'darwin' covers macOS, 'linux-gnu' covers Linux
     #local is_mac=0
 
@@ -139,9 +156,15 @@ _llmdump_status() {
     if [[ "$OSTYPE" == darwin* ]]; then
         # On macOS, check if the service label is running
         launchctl list com.user.llmdump &>/dev/null && service_active=1
+        # GUI capture state lives in the Aqua launchd domain, independent of
+        # this shell's env -- a non-empty value means it's enabled.
+        [ -n "$(launchctl getenv HTTPS_PROXY)" ] && has_gui=1
     else
         # On Linux, use standard systemctl
         systemctl --user is-active --quiet llmdump.service && service_active=1
+        # Probe the systemd --user manager env (kept in sync with the D-Bus
+        # activation env by _llmdump_gui_on/off). '=.' requires a non-empty value.
+        systemctl --user show-environment 2>/dev/null | grep -q '^HTTPS_PROXY=.' && has_gui=1
     fi
 
     # Print combined high-level state
@@ -156,23 +179,103 @@ _llmdump_status() {
     fi
 
     if [ "$mode" = "full" ]; then
-        echo -e "   • systemd service : $([ $service_active -eq 1 ] && echo -e "\e[32mactive\e[0m" || echo -e "\e[31minactive\e[0m")"
-        echo -e "   • capture.flag    : $([ $has_flag -eq 1 ] && echo -e "\e[32mpresent\e[0m" || echo -e "\e[31mmissing\e[0m")"
-        echo -e "   • proxy           : $([ -n "$HTTPS_PROXY" ] && echo "$HTTPS_PROXY" || echo "not set")"
+        echo -e "   • systemd service    : $([ $service_active -eq 1 ] && echo -e "\e[32mactive\e[0m" || echo -e "\e[31minactive\e[0m")"
+        echo -e "   • capture.flag       : $([ $has_flag -eq 1 ] && echo -e "\e[32mpresent\e[0m" || echo -e "\e[31mmissing\e[0m")"
+        echo -e "   • gui (experimental) : $([ $has_gui -eq 1 ] && echo -e "\e[32menabled\e[0m" || echo -e "\e[31mdisabled\e[0m")"
+        echo -e "   • proxy              : $([ -n "$HTTPS_PROXY" ] && echo "$HTTPS_PROXY" || echo "not set")"
     fi
+}
+
+# ──────────────────────────────────────────────────────────────────────────
+# Single source of truth for the capture environment, emitted as NAME=VALUE
+# lines. Every consumer (shell session, GUI/launchd, GUI/systemd+dbus) derives
+# its NAMES and VALUES from here, so the proxy/cert config lives in one place.
+# ──────────────────────────────────────────────────────────────────────────
+_llmdump_capture_pairs() {
+    printf '%s\n' \
+        "HTTPS_PROXY=http://127.0.0.1:9501" \
+        "NODE_EXTRA_CA_CERTS=$HOME/.mitmproxy/mitmproxy-ca-cert.pem" \
+        "REQUESTS_CA_BUNDLE=$HOME/.mitmproxy/mitmproxy-ca-cert.pem" \
+        "DENO_TLS_CA_STORE=system"
 }
 
 # 🟢 Internal Helper: Enable Session Variables
 _llmdump_session_on() {
-    export HTTPS_PROXY="http://127.0.0.1:9501"
-    export NODE_EXTRA_CA_CERTS="$HOME/.mitmproxy/mitmproxy-ca-cert.pem"
-    export REQUESTS_CA_BUNDLE="$HOME/.mitmproxy/mitmproxy-ca-cert.pem"
-    export DENO_TLS_CA_STORE="system"
+    local kv
+    while IFS= read -r kv; do
+        export "$kv"
+    done <<< "$(_llmdump_capture_pairs)"
 }
 
 # 🔴 Internal Helper: Disable Session Variables
 _llmdump_session_off() {
-    unset HTTPS_PROXY NODE_EXTRA_CA_CERTS REQUESTS_CA_BUNDLE DENO_TLS_CA_STORE
+    local kv
+    while IFS= read -r kv; do
+        unset "${kv%%=*}"
+    done <<< "$(_llmdump_capture_pairs)"
+}
+
+# 🟢 Internal Helper: Enable GUI Session Variables
+# Propagates the same variables as _llmdump_session_on into the logged-in GUI
+# session, so graphical apps launched afterward inherit them.
+#
+# Caveats:
+#   • Only affects apps launched AFTER this runs -- restart running apps.
+#   • Only apps that honor these env vars are captured (Electron/Node, Python
+#     requests, Deno, curl). Native macOS (URLSession) apps and any app that
+#     pins certs ignore them and read proxy/trust from system settings.
+#   • On a bare WM (no systemd/D-Bus app launching) neither command propagates;
+#     env must be set at login instead.
+_llmdump_gui_on() {
+    local -a pairs=()
+    local kv
+    while IFS= read -r kv; do pairs+=("$kv"); done <<< "$(_llmdump_capture_pairs)"
+
+    if [[ "$OSTYPE" == darwin* ]]; then
+        # Sets vars in the per-user Aqua/GUI launchd domain (one call per var,
+        # split into NAME / VALUE on the first '=').
+        local name value
+        for kv in "${pairs[@]}"; do
+            name="${kv%%=*}"; value="${kv#*=}"
+            launchctl setenv "$name" "$value"
+        done
+    elif command -v dbus-update-activation-environment >/dev/null 2>&1; then
+        # One call updates the D-Bus activation environment (D-Bus-activated
+        # apps) and, via --systemd, the systemd --user manager (systemd-scope
+        # app launches, e.g. GNOME). Explicit NAME=VALUE pairs avoid any
+        # dependency on what the caller happens to have exported.
+        dbus-update-activation-environment --systemd "${pairs[@]}"
+    else
+        # Fallback: no D-Bus tool present, seed the systemd --user manager only.
+        systemctl --user set-environment "${pairs[@]}" 2>/dev/null
+    fi
+    echo -e "llmdump gui          : \e[32mENABLED\e[0m"
+    echo -e "   • \e[2mGUI apps must be restarted to pick up capture settings\e[0m"
+}
+
+# 🔴 Internal Helper: Disable GUI Session Variables
+_llmdump_gui_off() {
+    local -a names=() empties=()
+    local kv
+    while IFS= read -r kv; do
+        names+=("${kv%%=*}")     # NAME            (for unset / launchctl unsetenv)
+        empties+=("${kv%%=*}=")  # NAME=           (for the D-Bus empty overwrite)
+    done <<< "$(_llmdump_capture_pairs)"
+
+    if [[ "$OSTYPE" == darwin* ]]; then
+        local name
+        for name in "${names[@]}"; do launchctl unsetenv "$name"; done
+    else
+        # systemd side supports true removal.
+        systemctl --user unset-environment "${names[@]}" 2>/dev/null
+        # The D-Bus activation environment has no removal API, so overwrite the
+        # vars to empty (clients treat empty HTTPS_PROXY as "no proxy"). A true
+        # delete only happens on GUI session restart.
+        command -v dbus-update-activation-environment >/dev/null 2>&1 && \
+            dbus-update-activation-environment "${empties[@]}"
+    fi
+    echo -e "llmdump gui          : \e[31mDISABLED\e[0m"
+    echo -e "   • \e[2mGUI apps started while enabled keep capturing until restarted\e[0m"
 }
 
 # 🟢 Internal Helper: Enable System Service
