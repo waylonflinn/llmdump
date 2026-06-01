@@ -14,6 +14,7 @@ import json
 import os
 import sys
 from datetime import datetime, timedelta
+from typing import Union
 
 CAPTURE_DIR = os.environ.get("LLMDUMP_CAPTURE_DIR", os.path.expanduser("~/.cache/llmdump/capture/"))
 TS_FMT = "%Y%m%dT%H%M%S"
@@ -41,7 +42,7 @@ def anthropic_rates(model: str):
     return None
 
 
-def anthropic_cost(merged_usage: dict, model: str) -> float | None:
+def anthropic_cost(merged_usage: dict, model: str) -> Union[float, None]:
     """Compute $USD cost from an Anthropic usage block + model alias.
 
     Splits cache writes into 5m vs 1h tiers when the breakdown is present;
@@ -72,7 +73,7 @@ def anthropic_cost(merged_usage: dict, model: str) -> float | None:
     ) / 1_000_000
 
 
-def parse_dir_ts(dirname: str) -> datetime | None:
+def parse_dir_ts(dirname: str) -> Union[datetime, None]:
     """Extract and parse timestamp from directory name like 20260407T105438_openrouter_ai."""
     part = dirname.split("_")[0]
     try:
@@ -80,7 +81,7 @@ def parse_dir_ts(dirname: str) -> datetime | None:
     except ValueError:
         return None
 
-def parse_user_ts(user_input: str) -> datetime | None:
+def parse_user_ts(user_input: str) -> Union[datetime, None]:
     """Parse timestamp from user input, matching only date or full ISO 8601 short form."""
 
     if(user_input is None):
@@ -134,7 +135,7 @@ def normalize_model(model: str) -> str:
 
     return model
 
-def extract_usage(response_path: str) -> dict | None:
+def extract_usage(response_path: str) -> Union[dict, None]:
     """
     Parse response.json and return a normalized usage dict, or None.
 
@@ -153,7 +154,7 @@ def extract_usage(response_path: str) -> dict | None:
     # only overwriting with non-null values means later events (e.g.
     # Anthropic's message_delta) override earlier ones (message_start)
     # while still preserving fields the later event omits.
-    merged = {}
+    merged_usage = {}
     model = None
     for event in events:
         if not isinstance(event, dict):
@@ -162,39 +163,40 @@ def extract_usage(response_path: str) -> dict | None:
         msg = event.get("message")
         if isinstance(msg, dict):
             if isinstance(msg.get("usage"), dict):
-                merged.update({k: v for k, v in msg["usage"].items() if v is not None})
+                merged_usage.update({k: v for k, v in msg["usage"].items() if v is not None})
             if not model and msg.get("model"):
                 model = msg["model"]
         # Anthropic message_delta and OpenRouter chunks put usage at the top level
         if isinstance(event.get("usage"), dict):
-            merged.update({k: v for k, v in event["usage"].items() if v is not None})
+            merged_usage.update({k: v for k, v in event["usage"].items() if v is not None})
         if not model and event.get("model"):
             model = event["model"]
 
-    if not merged:
+    if not merged_usage:
         return None
 
     # Anthropic native schema
-    if "input_tokens" in merged or "output_tokens" in merged:
-        new_input = merged.get("input_tokens") or 0
-        cached    = merged.get("cache_read_input_tokens") or 0
-        written   = merged.get("cache_creation_input_tokens") or 0
+    if "input_tokens" in merged_usage or "output_tokens" in merged_usage:
+        new_input = merged_usage.get("input_tokens") or 0
+        cached    = merged_usage.get("cache_read_input_tokens") or 0
+        written   = merged_usage.get("cache_creation_input_tokens") or 0
+        cost      = anthropic_cost(merged_usage, model) if model is not None else 0
         return {
             "prompt":     new_input + cached + written,
             "cached":     cached,
             "written":    written,
-            "completion": merged.get("output_tokens"),
-            "cost":       anthropic_cost(merged, model),
+            "completion": merged_usage.get("output_tokens"),
+            "cost":       cost,
         }
 
     # OpenAI / OpenRouter schema
-    details = merged.get("prompt_tokens_details") or {}
+    details = merged_usage.get("prompt_tokens_details") or {}
     return {
-        "prompt":     merged.get("prompt_tokens"),
+        "prompt":     merged_usage.get("prompt_tokens"),
         "cached":     details.get("cached_tokens"),
         "written":    details.get("cache_write_tokens"),
-        "completion": merged.get("completion_tokens"),
-        "cost":       merged.get("cost"),
+        "completion": merged_usage.get("completion_tokens"),
+        "cost":       merged_usage.get("cost"),
     }
 
 
