@@ -76,19 +76,18 @@ llmdump() {
 
 # ❓ Interactive Command Reference Manual
 _llmdump_help() {
-    echo -e "\e[1;34m======================================================================\e[0m"
-    echo -e "🎯 \e[1;36mLLMDUMP HELP\e[0m"
-    echo -e "\e[1;34m======================================================================\e[0m"
-    echo -e "📋 \e[1mInfrastructure Paths:\e[0m"
-    echo -e "   • Capture Directory : \e[35m$LLMDUMP_CAPTURE_DIR\e[0m"
-    echo -e "   • mitmdump Flag File: \e[35m$LLMDUMP_FLAG_FILE\e[0m"
+    echo -e "llmdump"
     echo -e ""
-    echo -e "🛠️  \e[1mAvailable Commands:\e[0m"
+    echo -e "paths:"
+    echo -e "   • captures : \e[35m$LLMDUMP_CAPTURE_DIR\e[0m"
+    echo -e "   • flag file: \e[35m$LLMDUMP_FLAG_FILE\e[0m"
+    echo -e ""
+    echo -e "commands:"
     echo -e "   • \e[1;32mllmdump on\e[0m"
-    echo -e "     Enables systemd service, creates flag, and sets session variables."
+    echo -e "     Enables system service, creates flag, and sets session variables."
     echo -e ""
     echo -e "   • \e[1;31mllmdump off\e[0m"
-    echo -e "     Disables systemd service, removes flag, and unsets session variables."
+    echo -e "     Disables system service, removes flag, and unsets session variables."
     echo -e ""
     echo -e "   • \e[1;32mllmdump session on\e[0m"
     echo -e "     Alias for \e[1;32mllmdump on\e[0m."
@@ -97,7 +96,7 @@ _llmdump_help() {
     echo -e "     Disables session variables only. Leaves system level as-is."
     echo -e ""
     echo -e "   • \e[1;93mllmdump system on\e[0m"
-    echo -e "     Enables systemd service and flag. Leaves session variables as-is."
+    echo -e "     Enables system service and flag. Leaves session variables as-is."
     echo -e ""
     echo -e "   • \e[1;31mllmdump system off\e[0m"
     echo -e "     Alias for \e[1;31mllmdump off\e[0m"
@@ -148,19 +147,19 @@ _llmdump_status() {
 
     # Print combined high-level state
     if [ $has_flag -eq 1 ] && [ $has_proxy -eq 1 ] && [ $service_active -eq 1 ]; then
-        echo -e "🌐 LLM Dump Status: \e[32mFULLY ENABLED\e[0m (System & Session)"
+        echo -e "llmdump status       : \e[32mENABLED\e[0m"
     elif [ $service_active -eq 1 ] && [ $has_proxy -eq 0 ]; then
-        echo -e "🌐 LLM Dump Status: \e[93mSYSTEM ONLY\e[0m (not proxied in this shell session)"
+        echo -e "llmdump status       : \e[93mSYSTEM ONLY\e[0m (not proxied in this shell session)"
     elif [ $service_active -eq 0 ] && [ $has_flag -eq 0 ] && [ $has_proxy -eq 0 ]; then
-        echo -e "🌐 LLM Dump Status: \e[31mDISABLED\e[0m"
+        echo -e "llmdump status       : \e[31mDISABLED\e[0m"
     else
-        echo -e "🌐 LLM Dump Status: \e[31mDISABLED / PARTIAL\e[0m"
+        echo -e "llmdump status       : \e[31mDISABLED / PARTIAL\e[0m"
     fi
 
     if [ "$mode" = "full" ]; then
         echo -e "   • systemd service : $([ $service_active -eq 1 ] && echo -e "\e[32mactive\e[0m" || echo -e "\e[31minactive\e[0m")"
         echo -e "   • capture.flag    : $([ $has_flag -eq 1 ] && echo -e "\e[32mpresent\e[0m" || echo -e "\e[31mmissing\e[0m")"
-        echo -e "   • Session Proxy   : $([ -n "$HTTPS_PROXY" ] && echo "$HTTPS_PROXY" || echo "not set")"
+        echo -e "   • proxy           : $([ -n "$HTTPS_PROXY" ] && echo "$HTTPS_PROXY" || echo "not set")"
     fi
 }
 
