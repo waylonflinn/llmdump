@@ -58,6 +58,21 @@ NOTE: requires `mitmproxy` (install before running)
 curl -fsSL https://raw.githubusercontent.com/waylonflinn/llmdump/master/install.sh | bash
 ```
 
+### Certificates (optional)
+
+Some applications require the certificate for `mitmproxy` to be added to the system store.
+
+Ubuntu
+```sh
+sudo cp ~/.mitmproxy/mitmproxy-ca-cert.pem /usr/local/share/ca-certificates/mitmproxy.crt
+sudo update-ca-certificates
+```
+
+Macos
+```sh
+sudo security add-trusted-cert -d -p ssl -p basic -k /Library/Keychains/System.keychain ~/.mitmproxy/mitmproxy-ca-cert.pem
+```
+
 ### What it Does
 
 * create `~/.local/share/llmdump`

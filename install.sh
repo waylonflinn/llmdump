@@ -153,6 +153,11 @@ if [ "$IS_MAC" = true ]; then
     
     # Update actual mitmdump path inside the plist ($HOME is expanded by the wrapper at launch time)
     sed -i '' "s|/opt/homebrew/bin/mitmdump|$MITMDUMP_PATH|g" "$PLIST_FILE"
+
+    echo ""
+    echo "💡   To enable enable the mitmproxy certificate (required for some applications) run the following:"
+    echo "    sudo security add-trusted-cert -d -p ssl -p basic -k /Library/Keychains/System.keychain ~/.mitmproxy/mitmproxy-ca-cert.pem"
+    echo ""
 elif [ "$HAS_SYSTEMD" = true ]; then
     #echo "▼ Downloading Systemd Service..."
     SERVICE_FILE="$SERVICE_DIR/llmdump.service"
@@ -164,6 +169,12 @@ elif [ "$HAS_SYSTEMD" = true ]; then
     
     # Reload the user systemd daemon
     systemctl --user daemon-reload
+
+    echo ""
+    echo "💡   To enable enable the mitmproxy certificate (required for some applications) run the following:"
+    echo "    sudo cp ~/.mitmproxy/mitmproxy-ca-cert.pem /usr/local/share/ca-certificates/mitmproxy.crt"
+    echo "    sudo update-ca-certificates"
+    echo ""
 else
     echo "⚠️   Warning: unsupported system, service not installed."
     echo "     Please run 'mitmdump -p 9501 -s ~/.local/share/llmdump/dump_llm_stream.py' manually"
