@@ -68,10 +68,16 @@ sudo cp ~/.mitmproxy/mitmproxy-ca-cert.pem /usr/local/share/ca-certificates/mitm
 sudo update-ca-certificates
 ```
 
+Arch
+```sh
+sudo trust anchor --store ~/.mitmproxy/mitmproxy-ca-cert.cer
+```
+
 Macos
 ```sh
 sudo security add-trusted-cert -d -p ssl -p basic -k /Library/Keychains/System.keychain ~/.mitmproxy/mitmproxy-ca-cert.pem
 ```
+
 
 ### What it Does
 
