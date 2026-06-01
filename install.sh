@@ -116,7 +116,7 @@ mkdir -p "$CAPTURE_DIR"
 
 # 5. Create Target Directories
 SHARE_DIR="$HOME/.local/share/llmdump"
-echo "🛠️ Installing into         $SHARE_DIR"
+echo "🛠️ Application directory   $SHARE_DIR"
 
 mkdir -p "$SHARE_DIR"
 
@@ -141,7 +141,7 @@ else
     SERVICE_DIR="$HOME/.config/systemd/user"
 fi
 
-echo "⚙️ Installing service into $SERVICE_DIR"
+echo "⚙️ Service directory       $SERVICE_DIR"
 echo ""
 
 mkdir -p "$SERVICE_DIR"
@@ -202,7 +202,7 @@ else
 fi
 
 echo "🎉 Installation complete!"
-echo "🗘  Please restart your terminal or run: source $SHELL_RC"
+echo "↺  Please restart your terminal or run: source $SHELL_RC"
 echo ""
 
 echo "💡   To enable OpenClaw see:              https://github.com/waylonflinn/llmdump#3-openclaw-setup-optional"
