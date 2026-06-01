@@ -107,7 +107,6 @@ _llmdump_help() {
     echo -e "   • \e[1;36mllmdump report\e[0m"
     echo -e "     display a report summarizing any capture activity for today."
     echo -e "     try \e[1;36mllmdump report help\e[0m for additional options."
-    echo -e "\e[1;34m======================================================================\e[0m"
 }
 
 _llmdump_report() {
