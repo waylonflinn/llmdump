@@ -4,11 +4,11 @@ Dump LLM requests and responses to a timestamped labeled directory as text and J
 
 ```
 capture
-├── 20260515T112851_openrouter_ai
+├── 20260515T112851_3f9a1c2b_openrouter_ai
 │   └── metadata.json, request.json, request.txt, response.json, response.txt
-├── 20260515T112855_openrouter_ai
+├── 20260515T112855_a07c4e91_openrouter_ai
 │   └── metadata.json, request.json, request.txt, response.json, response.txt
-└── 20260527T182743_api_anthropic_com
+└── 20260527T182743_d8b6105f_api_anthropic_com
     └── metadata.json, request.json, request.txt, response.json, response.txt
 ```
 

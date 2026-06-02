@@ -10,7 +10,7 @@ Toggle capture without restarting anything:
     rm ~/.mitmproxy/capture.flag       # disable
 
 Each captured request is written to:
-    ~/data/capture/<timestamp>_<host>/request|respose|metadata.json
+    ~/data/capture/<timestamp>_<flowid>_<host>/request|response|metadata.json
 
 The request_body field contains the full prompt including cache_control blocks.
 The response_body field contains the full SSE stream reassembled as a string.
@@ -265,7 +265,7 @@ class DumpLLM:
         ts = flow._llm_ts
         ts_iso = datetime.fromtimestamp(ts / 1000).strftime('%Y%m%dT%H%M%S')
 
-        dirname = f"{OUTPUT_DIR}/{ts_iso}_{host.replace('.', '_')}"
+        dirname = f"{OUTPUT_DIR}/{ts_iso}_{flow.id[:8]}_{host.replace('.', '_')}"
         os.makedirs(dirname, exist_ok=True)
 
         # request.json — parsed
