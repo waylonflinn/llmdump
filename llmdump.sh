@@ -111,11 +111,10 @@ _llmdump_help() {
     echo -e "     Alias for \e[1;31mllmdump off\e[0m"
     echo -e ""
     echo -e "   • \e[1;32mllmdump gui on\e[0m (experimental)"
-    echo -e "     Sets capture variables in the logged-in GUI session so graphical"
-    echo -e "     apps launched afterward are captured. Restart apps to pick it up."
+    echo -e "     Enable session variables for current GUI session (requires app restart)."
     echo -e ""
     echo -e "   • \e[1;31mllmdump gui off\e[0m (experimental)"
-    echo -e "     Clears the GUI session capture variables."
+    echo -e "     Disable session variables for current GUI session."
     echo -e ""
     echo -e "   • \e[1;36mllmdump status\e[0m"
     echo -e "     Displays current session and systemd status."
@@ -169,13 +168,13 @@ _llmdump_status() {
 
     # Print combined high-level state
     if [ $has_flag -eq 1 ] && [ $has_proxy -eq 1 ] && [ $service_active -eq 1 ]; then
-        echo -e "llmdump status       : \e[32mENABLED\e[0m"
+        echo -e "llmdump status          : \e[32mENABLED\e[0m"
     elif [ $service_active -eq 1 ] && [ $has_proxy -eq 0 ]; then
-        echo -e "llmdump status       : \e[93mSYSTEM ONLY\e[0m (not proxied in this shell session)"
+        echo -e "llmdump status          : \e[93mSYSTEM ONLY\e[0m (not proxied in this shell session)"
     elif [ $service_active -eq 0 ] && [ $has_flag -eq 0 ] && [ $has_proxy -eq 0 ]; then
-        echo -e "llmdump status       : \e[31mDISABLED\e[0m"
+        echo -e "llmdump status          : \e[31mDISABLED\e[0m"
     else
-        echo -e "llmdump status       : \e[31mDISABLED / PARTIAL\e[0m"
+        echo -e "llmdump status          : \e[31mDISABLED / PARTIAL\e[0m"
     fi
 
     if [ "$mode" = "full" ]; then
